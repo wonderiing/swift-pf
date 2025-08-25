@@ -17,7 +17,7 @@ struct LoginView: View {
     var body: some View {
         NavigationStack {
             VStack(spacing: 20) {
-                // Logo y título
+                // Logo y título - quitar esto
                 VStack(spacing: 8) {
                     Image("doc2")
                         .resizable()

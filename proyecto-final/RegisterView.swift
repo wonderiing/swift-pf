@@ -87,7 +87,7 @@ struct RegisterView: View {
                 }
 
                 Button(action: {
-                    // Acción registro GitHub
+                
                 }) {
                     HStack {
                         Image("github")
