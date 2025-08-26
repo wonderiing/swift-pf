@@ -101,6 +101,7 @@ struct LoginView: View {
                 }
 
 
+
                 Spacer()
 
                 // Footer
@@ -119,9 +120,9 @@ struct LoginView: View {
         }
     }
 
-    // Función de login con POST
+    // Función de login con POST y Keychain
     func login() async {
-        guard let url = URL(string: "https://tu-api.com/login") else { return }
+        guard let url = URL(string: "http://localhost:3000/api/auth/login") else { return }
 
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
@@ -135,10 +136,23 @@ struct LoginView: View {
 
         do {
             let (data, response) = try await URLSession.shared.data(for: request)
-            if let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 200 {
+            if let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 201 {
                 // Decodificar JSON de la respuesta
-                if let json = try? JSONSerialization.jsonObject(with: data) {
+                if let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] {
                     print("Login correcto: \(json)")
+                    
+                    // 🔑 NUEVO: Guardar token en Keychain
+                    if let token = json["token"] as? String {
+                        TokenManager.shared.currentToken = token
+                        print("✅ Token guardado en Keychain: \(String(token.prefix(20)))...")
+                        
+                        // Opcional: también guardar el email
+                        if let userEmail = json["email"] as? String {
+                            // Puedes agregar esto al TokenManager si quieres guardar el email también
+                            print("📧 Usuario logueado: \(userEmail)")
+                        }
+                    }
+                    
                     await MainActor.run {
                         isLoggedIn = true
                     }
@@ -154,17 +168,10 @@ struct LoginView: View {
             }
         }
     }
+
 }
 
-struct DashboardView: View {
-    var body: some View {
-        Text("Bienvenido al Dashboard 🎉")
-            .font(.largeTitle)
-            .padding()
-    }
-}
 
-// Estilo de checkbox
 struct CheckboxToggleStyle: ToggleStyle {
     func makeBody(configuration: Configuration) -> some View {
         Button(action: { configuration.isOn.toggle() }) {

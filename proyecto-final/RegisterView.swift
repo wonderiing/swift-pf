@@ -1,9 +1,7 @@
-
 import SwiftUI
 
 struct RegisterView: View {
-    @State private var name: String = ""
-    @State private var username: String = ""
+    @State private var fullName: String = ""
     @State private var email: String = ""
     @State private var password: String = ""
     @State private var rememberMe: Bool = false
@@ -28,13 +26,10 @@ struct RegisterView: View {
                 }
                 .padding(.bottom, 30)
 
-                TextField("Nombre completo", text: $name)
+                TextField("Nombre completo", text: $fullName)
                     .textFieldStyle(RoundedBorderTextFieldStyle())
                     .autocapitalization(.words)
 
-                TextField("Nombre de usuario", text: $username)
-                    .textFieldStyle(RoundedBorderTextFieldStyle())
-                    .autocapitalization(.none)
 
                 TextField("Correo Electrónico", text: $email)
                     .textFieldStyle(RoundedBorderTextFieldStyle())
@@ -66,6 +61,7 @@ struct RegisterView: View {
                     Text(errorMessage)
                         .foregroundColor(.red)
                         .font(.footnote)
+                        .multilineTextAlignment(.leading)
                 }
 
                 Text("o continúa con")
@@ -109,43 +105,141 @@ struct RegisterView: View {
         }
     }
 
-    // Función de registro con POST
+    // 🔧 FUNCIÓN NUEVA: Extraer errores del servidor
+    func extractErrorMessage(from data: Data, statusCode: Int) -> String {
+        guard let responseString = String(data: data, encoding: .utf8),
+              let jsonData = responseString.data(using: .utf8),
+              let json = try? JSONSerialization.jsonObject(with: jsonData) as? [String: Any] else {
+            return "Error en el registro (Código: \(statusCode))"
+        }
+        
+        // Caso 1: Array de mensajes (tu servidor)
+        if let messages = json["message"] as? [String] {
+            let errorList = messages.map { "• \($0)" }.joined(separator: "\n")
+            return "Errores:\n\(errorList)"
+        }
+        
+        // Caso 2: Mensaje único como string
+        if let message = json["message"] as? String {
+            return message
+        }
+        
+        // Caso 3: Campo "error"
+        if let error = json["error"] as? String {
+            return error
+        }
+        
+        // Fallback por código
+        switch statusCode {
+        case 400: return "Datos inválidos. Verifica los campos."
+        case 409: return "El email ya está registrado"
+        case 422: return "Datos no válidos. Verifica el formato."
+        case 500: return "Error del servidor. Intenta más tarde."
+        default: return "Error en el registro (Código: \(statusCode))"
+        }
+    }
+
     func register() async {
-        guard let url = URL(string: "https://tu-api.com/register") else { return }
+        print("🚀 Iniciando registro...")
+        
+        guard let url = URL(string: "http://localhost:3000/api/auth/register") else {
+            return
+        }
+        print("✅ URL creada: \(url)")
 
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
 
         let body: [String: Any] = [
-            "name": name,
-            "username": username,
+            "fullName": fullName,
             "email": email,
             "password": password
         ]
-        request.httpBody = try? JSONSerialization.data(withJSONObject: body)
+        
+        
+        do {
+            request.httpBody = try JSONSerialization.data(withJSONObject: body)
+
+            // 🐛 DEBUG: Mostrar el JSON como string
+            if let jsonString = String(data: request.httpBody!, encoding: .utf8) {
+                print("📝 JSON enviado: \(jsonString)")
+            }
+            
+        } catch {
+            print("❌ Error creando JSON: \(error)")
+            return
+        }
 
         do {
+            print("📡 Enviando request...")
             let (data, response) = try await URLSession.shared.data(for: request)
-            if let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 200 {
+            
+            // 🐛 DEBUG: Mostrar respuesta completa
+            if let httpResponse = response as? HTTPURLResponse {
+
+            }
+            
+            // 🐛 DEBUG: Mostrar data recibida
+            if let responseString = String(data: data, encoding: .utf8) {
+            } else {
+
+            }
+            
+            if let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 201 {
+                
+                
                 // Decodificar JSON de la respuesta
                 if let json = try? JSONSerialization.jsonObject(with: data) {
-                    print("Registro correcto: \(json)")
+                    print("✅ JSON parseado: \(json)")
                     await MainActor.run {
                         isRegistered = true
+                        errorMessage = nil // Limpiar errores
+                    }
+                } else {
+                    print("❌ Error parseando JSON de respuesta")
+                    await MainActor.run {
+                        errorMessage = "Error procesando respuesta del servidor"
                     }
                 }
-            } else {
+            } else if let httpResponse = response as? HTTPURLResponse {
+                // 🐛 DEBUG: Manejar otros status codes
+                print("⚠️ Status Code inesperado: \(httpResponse.statusCode)")
+                
+                // Mostrar mensaje de error del servidor si existe
+                if let errorData = String(data: data, encoding: .utf8) {
+                    print("💬 Mensaje del servidor: \(errorData)")
+                }
+                
+                // 🔧 CAMBIO: Usar la nueva función para extraer errores
+                let userMessage = extractErrorMessage(from: data, statusCode: httpResponse.statusCode)
+                
                 await MainActor.run {
-                    errorMessage = "Error en el registro"
+                    errorMessage = userMessage
                 }
             }
         } catch {
+
+        
+            if let urlError = error as? URLError {
+                print("   - Código URLError: \(urlError.code.rawValue)")
+                switch urlError.code {
+                case .notConnectedToInternet:
+                    print("   - Sin conexión a internet")
+                case .cannotConnectToHost:
+                    print("   - No se puede conectar al servidor")
+                case .timedOut:
+                    print("   - Timeout de conexión")
+                default:
+                    print("   - Otro error de URL")
+                }
+            }
+            
             await MainActor.run {
                 errorMessage = "Error de conexión: \(error.localizedDescription)"
             }
         }
-    }
+            }
 }
 
 #Preview {
