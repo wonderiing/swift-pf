@@ -308,7 +308,7 @@ struct DashboardView: View {
     
     func performUpload(fileURL: URL, token: String) async throws {
         guard let uploadURL = URL(string: "http://localhost:3000/api/processing-pipeline-module") else {
-            throw APIError.invalidURL
+            throw APIError.invalidURL 
         }
         
         // Leer el archivo
