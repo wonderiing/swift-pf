@@ -20,12 +20,9 @@ struct Archivo: Identifiable, Decodable {
     
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
-        
         id = try container.decode(Int.self, forKey: .id)
         nombre = try container.decode(String.self, forKey: .nombre)
         tipo = try container.decode(String.self, forKey: .tipo)
-        
-        // user.fullName -> subidoPor
         let userContainer = try container.nestedContainer(keyedBy: UserKeys.self, forKey: .user)
         subidoPor = try userContainer.decode(String.self, forKey: .fullName)
     }
@@ -37,11 +34,8 @@ class ArchivoViewModel: ObservableObject {
     
     func fetchArchivos() {
         guard let url = URL(string: "http://localhost:3000/api/files/user") else { return }
-        
         var request = URLRequest(url: url)
         request.httpMethod = "GET"
-        
-        // ✅ Token desde Keychain
         if let token = TokenManager.shared.currentToken {
             request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
         } else {
@@ -49,24 +43,18 @@ class ArchivoViewModel: ObservableObject {
             return
         }
         
-        URLSession.shared.dataTask(with: request) { data, response, error in
+        URLSession.shared.dataTask(with: request) { data, _, error in
             if let error = error {
                 print("❌ Error en fetchArchivos:", error)
                 return
             }
-            
             guard let data = data else { return }
-            
             do {
                 let decoded = try JSONDecoder().decode([Archivo].self, from: data)
-                DispatchQueue.main.async {
-                    self.archivos = decoded
-                }
+                DispatchQueue.main.async { self.archivos = decoded }
             } catch {
                 print("❌ Error al decodificar archivos:", error)
-                if let raw = String(data: data, encoding: .utf8) {
-                    print("📄 Respuesta cruda:", raw)
-                }
+                if let raw = String(data: data, encoding: .utf8) { print("📄 Respuesta cruda:", raw) }
             }
         }.resume()
     }
@@ -78,7 +66,7 @@ struct FileFinder: View {
     @State private var searchText = ""
     @State private var selectedTipo = "Todos los tipos"
     
-    let tipos = ["Todos los tipos", ".csv", ".pdf"]
+    let tipos = ["Todos los tipos", ".csv", ".xlsx", ".pdf"]
     
     var filteredArchivos: [Archivo] {
         viewModel.archivos.filter {
@@ -89,7 +77,7 @@ struct FileFinder: View {
     
     var body: some View {
         NavigationView {
-            VStack(alignment: .leading, spacing: 20) {
+            VStack(alignment: .leading, spacing: 16) {
                 Text("📂 Archivos Recientes")
                     .font(.largeTitle)
                     .bold()
@@ -106,9 +94,7 @@ struct FileFinder: View {
                 
                 // Filtro
                 Picker("Tipo", selection: $selectedTipo) {
-                    ForEach(tipos, id: \.self) { tipo in
-                        Text(tipo).tag(tipo)
-                    }
+                    ForEach(tipos, id: \.self) { tipo in Text(tipo).tag(tipo) }
                 }
                 .pickerStyle(SegmentedPickerStyle())
                 
@@ -124,9 +110,7 @@ struct FileFinder: View {
                 Spacer()
             }
             .padding()
-            .onAppear {
-                viewModel.fetchArchivos()
-            }
+            .onAppear { viewModel.fetchArchivos() }
             .navigationBarHidden(true)
         }
     }
@@ -137,43 +121,46 @@ struct ArchivoCard: View {
     let archivo: Archivo
     
     var color: Color {
-        archivo.tipo.lowercased().contains("csv") ? .green : .blue
+        archivo.tipo.lowercased().contains("csv") || archivo.tipo.lowercased().contains("xlsx") ? .green : .blue
     }
     
     var icon: String {
-        archivo.tipo.lowercased().contains("csv") ? "doc.text.fill" : "doc.richtext.fill"
+        archivo.tipo.lowercased().contains("csv") || archivo.tipo.lowercased().contains("xlsx") ? "doc.text.fill" : "doc.richtext.fill"
     }
     
     var body: some View {
-        HStack(spacing: 16) {
-            Image(systemName: icon)
-                .font(.system(size: 24))
-                .foregroundColor(.white)
-                .padding()
-                .background(color)
-                .cornerRadius(10)
-            
-            VStack(alignment: .leading, spacing: 4) {
-                Text(archivo.nombre)
-                    .font(.headline)
-                Text("Subido por \(archivo.subidoPor)")
-                    .font(.subheadline)
-                    .foregroundColor(.gray)
+        NavigationLink(destination: FileDetail(archivo: archivo)) {
+            HStack(spacing: 16) {
+                Image(systemName: icon)
+                    .font(.system(size: 24))
+                    .foregroundColor(.white)
+                    .padding()
+                    .background(color)
+                    .cornerRadius(10)
+                
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(archivo.nombre)
+                        .font(.headline)
+                    Text("Subido por \(archivo.subidoPor)")
+                        .font(.subheadline)
+                        .foregroundColor(.gray)
+                }
+                
+                Spacer()
+                
+                Text(archivo.tipo.uppercased())
+                    .font(.caption)
+                    .bold()
+                    .padding(8)
+                    .background(color.opacity(0.15))
+                    .cornerRadius(10)
             }
-            
-            Spacer()
-            
-            Text(archivo.tipo.uppercased())
-                .font(.caption)
-                .bold()
-                .padding(8)
-                .background(color.opacity(0.15))
-                .cornerRadius(10)
+            .padding()
+            .background(Color.white)
+            .cornerRadius(16)
+            .shadow(color: Color.black.opacity(0.05), radius: 4, x: 0, y: 4)
         }
-        .padding()
-        .background(Color.white)
-        .cornerRadius(16)
-        .shadow(color: Color.black.opacity(0.05), radius: 4, x: 0, y: 4)
+        .buttonStyle(PlainButtonStyle())
     }
 }
 

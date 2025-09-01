@@ -1,6 +1,24 @@
 import SwiftUI
 import UniformTypeIdentifiers
 
+struct ContentView: View {
+    var body: some View {
+        TabView {
+            DashboardView()
+                .tabItem {
+                    Image(systemName: "house.fill")
+                    Text("Dashboard")
+                }
+            
+            FileFinder()
+                .tabItem {
+                    Image(systemName: "folder.fill")
+                    Text("FileFinder")
+                }
+        }
+    }
+}
+
 struct DashboardView: View {
     // Estados
     @State private var totalFiles = 0
@@ -308,7 +326,7 @@ struct DashboardView: View {
     
     func performUpload(fileURL: URL, token: String) async throws {
         guard let uploadURL = URL(string: "http://localhost:3000/api/processing-pipeline-module") else {
-            throw APIError.invalidURL 
+            throw APIError.invalidURL
         }
         
         // Leer el archivo
@@ -411,7 +429,7 @@ struct DocumentPicker: UIViewControllerRepresentable {
     }
 }
 
-/// Tarjeta vertical para stats (igual que antes)
+/// Tarjeta vertical para stats
 struct StatVerticalCard: View {
     var title: String
     var value: String
@@ -462,6 +480,17 @@ enum APIError: Error, LocalizedError {
     }
 }
 
+// Suponiendo que FileFinder está definido en otro archivo del proyecto
+// Si quieres un placeholder para pruebas, aquí tienes uno simple:
+// struct FileFinder: View {
+//     var body: some View {
+//         Text("FileFinder View")
+//             .font(.largeTitle)
+//             .padding()
+//     }
+// }
+
 #Preview {
-    DashboardView()
+    ContentView()
 }
+
