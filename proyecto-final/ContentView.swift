@@ -1,23 +1,25 @@
 //
-//  ContentView.swift
+//  LoginView.swift
 //  proyecto-final
 //
 //  Created by Carlos on 25/08/25.
 //
 
 import SwiftUI
+import GoogleSignIn
 
 struct LoginView: View {
+    @EnvironmentObject var session: SessionManager
+
     @State private var email: String = ""
     @State private var password: String = ""
     @State private var rememberMe: Bool = false
-    @State private var isLoggedIn: Bool = false
     @State private var errorMessage: String?
 
     var body: some View {
         NavigationStack {
             VStack(spacing: 20) {
-                // Logo y título - quitar esto
+                // Logo y título
                 VStack(spacing: 8) {
                     Image("doc2")
                         .resizable()
@@ -45,16 +47,14 @@ struct LoginView: View {
                         .toggleStyle(CheckboxToggleStyle())
                     Spacer()
                     Button("¿Olvidaste tu contraseña?") {
-                        // Aquí lógica extra
+                        // Lógica extra
                     }
                     .font(.footnote)
                 }
 
                 // Botón de login
                 Button("Iniciar Sesión") {
-                    Task {
-                        await login()
-                    }
+                    Task { await login() }
                 }
                 .frame(maxWidth: .infinity)
                 .padding()
@@ -71,9 +71,8 @@ struct LoginView: View {
                 Text("o continúa con")
                     .foregroundColor(.gray)
 
-                // Botones sociales
                 Button(action: {
-                    // Acción login Google
+                    Task { await loginWithGoogle() }
                 }) {
                     HStack {
                         Image("google")
@@ -100,28 +99,20 @@ struct LoginView: View {
                     .cornerRadius(8)
                 }
 
-
-
                 Spacer()
 
-                // Footer
                 // Footer
                 NavigationLink(destination: RegisterView()) {
                     Text("¿No tienes una cuenta? Regístrate aquí")
                         .font(.footnote)
                         .foregroundColor(.blue)
                 }
-
             }
             .padding()
-            .navigationDestination(isPresented: $isLoggedIn) {
-                ContentView()
-            }
-
         }
     }
 
-    // Función de login con POST y Keychain
+    // MARK: - Funciones de login
     func login() async {
         guard let url = URL(string: "http://localhost:3000/api/auth/login") else { return }
 
@@ -138,41 +129,57 @@ struct LoginView: View {
         do {
             let (data, response) = try await URLSession.shared.data(for: request)
             if let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 201 {
-                // Decodificar JSON de la respuesta
-                if let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] {
-                    print("Login correcto: \(json)")
-                    
-                    // 🔑 NUEVO: Guardar token en Keychain
-                    if let token = json["token"] as? String {
-                        TokenManager.shared.currentToken = token
-                        print("✅ Token guardado en Keychain: \(String(token.prefix(20)))...")
-                        
-                        // Opcional: también guardar el email
-                        if let userEmail = json["email"] as? String {
-                            // Puedes agregar esto al TokenManager si quieres guardar el email también
-                            print("📧 Usuario logueado: \(userEmail)")
-                        }
-                    }
-                    
-                    await MainActor.run {
-                        isLoggedIn = true
-                    }
+                if let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+                   let token = json["token"] as? String {
+                    await MainActor.run { session.login(token: token) }
+                } else {
+                    await MainActor.run { errorMessage = "Error: respuesta inválida del servidor" }
                 }
             } else {
-                await MainActor.run {
-                    errorMessage = "Credenciales inválidas"
-                }
+                await MainActor.run { errorMessage = "Credenciales inválidas" }
             }
         } catch {
-            await MainActor.run {
-                errorMessage = "Error de conexión: \(error.localizedDescription)"
-            }
+            await MainActor.run { errorMessage = "Error de conexión: \(error.localizedDescription)" }
         }
     }
 
+    func loginWithGoogle() async {
+        guard let presentingViewController = UIApplication.shared.connectedScenes
+            .compactMap({ ($0 as? UIWindowScene)?.keyWindow })
+            .first?.rootViewController else { return }
+
+        do {
+            let result = try await GIDSignIn.sharedInstance.signIn(withPresenting: presentingViewController)
+            guard let idToken = result.user.idToken?.tokenString else {
+                await MainActor.run { errorMessage = "No se pudo obtener el ID Token de Google" }
+                return
+            }
+
+            guard let url = URL(string: "http://localhost:3000/api/auth/google/mobile") else { return }
+            var request = URLRequest(url: url)
+            request.httpMethod = "POST"
+            request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+            let body: [String: Any] = ["idToken": idToken]
+            request.httpBody = try? JSONSerialization.data(withJSONObject: body)
+
+            let (data, response) = try await URLSession.shared.data(for: request)
+            if let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 201 {
+                if let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+                   let token = json["access_token"] as? String {
+                    await MainActor.run { session.login(token: token) }
+                } else {
+                    await MainActor.run { errorMessage = "Error: respuesta inválida del servidor" }
+                }
+            } else {
+                await MainActor.run { errorMessage = "Error en login con Google" }
+            }
+        } catch {
+            await MainActor.run { errorMessage = "Error de Google Sign-In: \(error.localizedDescription)" }
+        }
+    }
 }
 
-
+// MARK: - Toggle personalizado
 struct CheckboxToggleStyle: ToggleStyle {
     func makeBody(configuration: Configuration) -> some View {
         Button(action: { configuration.isOn.toggle() }) {
@@ -185,7 +192,9 @@ struct CheckboxToggleStyle: ToggleStyle {
     }
 }
 
-
+// MARK: - Preview
 #Preview {
     LoginView()
+        .environmentObject(SessionManager())
 }
+

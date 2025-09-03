@@ -135,24 +135,39 @@ struct FileDetail: View {
     // MARK: - Vista previa
     @ViewBuilder
     private func previewView() -> some View {
-        ScrollView {
+        ScrollView([.vertical]) {
             switch archivo.tipo.lowercased() {
             case let t where t.contains("csv") || t.contains("xlsx"):
-                VStack(alignment: .leading, spacing: 4) {
-                    ForEach(0..<viewModel.tableData.count, id: \.self) { rowIndex in
-                        HStack {
-                            ForEach(viewModel.tableData[rowIndex], id: \.self) { cell in
-                                Text(cell)
-                                    .font(.system(.body, design: .monospaced))
-                                    .padding(4)
-                                    .frame(minWidth: 50, alignment: .leading)
-                                    .background(Color(.systemGray6))
-                                    .border(Color.gray.opacity(0.3))
+                VStack(alignment: .leading, spacing: 8) {
+                    let maxColumns = 6
+                    let visibleColumns = min(viewModel.tableData.first?.count ?? 1, maxColumns)
+                    
+                    LazyVGrid(
+                        columns: Array(repeating: GridItem(.flexible(), spacing: 4), count: visibleColumns),
+                        spacing: 4
+                    ) {
+                        ForEach(0..<viewModel.tableData.count, id: \.self) { rowIndex in
+                            ForEach(0..<visibleColumns, id: \.self) { colIndex in
+                                if colIndex < viewModel.tableData[rowIndex].count {
+                                    Text(viewModel.tableData[rowIndex][colIndex])
+                                        .font(.system(.footnote, design: .monospaced))
+                                        .padding(6)
+                                        .frame(maxWidth: .infinity, alignment: .leading)
+                                        .background(Color(.systemGray6))
+                                        .cornerRadius(6)
+                                }
                             }
                         }
                     }
+                    .padding()
+                    
+                    if let total = viewModel.tableData.first?.count, total > maxColumns {
+                        Text("⚠️ Mostrando solo las primeras \(maxColumns) de \(total) columnas")
+                            .font(.footnote)
+                            .foregroundColor(.gray)
+                            .padding(.horizontal)
+                    }
                 }
-                .padding()
                 
             case let t where t.contains("pdf"):
                 if let url = viewModel.pdfURL {
@@ -190,10 +205,18 @@ struct FileDetail: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 16) {
                     Text("📊 Análisis de IA")
-                        .font(.headline)
+                        .font(.title2)
+                        .bold()
+                    
                     Text(detalleValue.aiResponse)
-                        .font(.body)
+                        .font(.system(size: 16))
                         .multilineTextAlignment(.leading)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .lineSpacing(4)
+                        .padding()
+                        .background(Color(.systemGray6))
+                        .cornerRadius(12)
+                    
                     Text("⏱ Analizado el \(formatDate(detalleValue.analyzedAt))")
                         .font(.footnote)
                         .foregroundColor(.gray)
