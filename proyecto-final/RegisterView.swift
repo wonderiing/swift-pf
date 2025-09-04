@@ -1,12 +1,13 @@
 import SwiftUI
 
 struct RegisterView: View {
+    @EnvironmentObject var session: SessionManager
     @State private var fullName: String = ""
     @State private var email: String = ""
     @State private var password: String = ""
     @State private var rememberMe: Bool = false
-    @State private var isRegistered: Bool = false
     @State private var errorMessage: String?
+    @State private var showSuccessMessage = false
 
     var body: some View {
         NavigationStack {
@@ -63,6 +64,33 @@ struct RegisterView: View {
                         .font(.footnote)
                         .multilineTextAlignment(.leading)
                 }
+                
+                if showSuccessMessage {
+                    VStack(spacing: 12) {
+                        Text("✅ ¡Usuario registrado exitosamente!")
+                            .foregroundColor(.green)
+                            .font(.headline)
+                            .multilineTextAlignment(.center)
+                        
+                        Text("Por favor inicia sesión con tus credenciales")
+                            .foregroundColor(.secondary)
+                            .font(.footnote)
+                            .multilineTextAlignment(.center)
+                        
+                        NavigationLink(destination: LoginView()) {
+                            Text("Ir al Login")
+                                .font(.subheadline.bold())
+                                .foregroundColor(.white)
+                                .padding()
+                                .frame(maxWidth: .infinity)
+                                .background(Color.blue)
+                                .cornerRadius(12)
+                        }
+                    }
+                    .padding()
+                    .background(Color.green.opacity(0.1))
+                    .cornerRadius(12)
+                }
 
                 Text("o continúa con")
                     .foregroundColor(.gray)
@@ -99,9 +127,6 @@ struct RegisterView: View {
                 Spacer()
             }
             .padding()
-            .navigationDestination(isPresented: $isRegistered) {
-                DashboardView()
-            }
         }
     }
 
@@ -187,28 +212,25 @@ struct RegisterView: View {
             }
             
             if let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 201 {
+                print("✅ RegisterView: Status code 201 - User created successfully")
                 
+                // Debug: Mostrar la respuesta completa del servidor
+                if let responseString = String(data: data, encoding: .utf8) {
+                    print("📄 Server response: \(responseString)")
+                }
                 
-                // Decodificar JSON de la respuesta
-                if let json = try? JSONSerialization.jsonObject(with: data) {
-                    print("✅ JSON parseado: \(json)")
-                    await MainActor.run {
-                        isRegistered = true
-                        errorMessage = nil // Limpiar errores
-                    }
-                } else {
-                    print("❌ Error parseando JSON de respuesta")
-                    await MainActor.run {
-                        errorMessage = "Error procesando respuesta del servidor"
-                    }
+                // El registro fue exitoso, mostrar mensaje de éxito
+                await MainActor.run {
+                    errorMessage = nil // Limpiar errores
+                    showSuccessMessage = true // Mostrar mensaje de éxito
                 }
             } else if let httpResponse = response as? HTTPURLResponse {
                 // 🐛 DEBUG: Manejar otros status codes
-                print("⚠️ Status Code inesperado: \(httpResponse.statusCode)")
+                print("⚠️ RegisterView: Unexpected status code: \(httpResponse.statusCode)")
                 
                 // Mostrar mensaje de error del servidor si existe
                 if let errorData = String(data: data, encoding: .utf8) {
-                    print("💬 Mensaje del servidor: \(errorData)")
+                    print("💬 Server error message: \(errorData)")
                 }
                 
                 // 🔧 CAMBIO: Usar la nueva función para extraer errores
@@ -216,6 +238,11 @@ struct RegisterView: View {
                 
                 await MainActor.run {
                     errorMessage = userMessage
+                }
+            } else {
+                print("❌ RegisterView: No HTTP response received")
+                await MainActor.run {
+                    errorMessage = "Error: No se recibió respuesta del servidor"
                 }
             }
         } catch {
@@ -244,4 +271,5 @@ struct RegisterView: View {
 
 #Preview {
     RegisterView()
+        .environmentObject(SessionManager())
 }

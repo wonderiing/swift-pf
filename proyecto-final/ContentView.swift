@@ -131,14 +131,19 @@ struct LoginView: View {
             if let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 201 {
                 if let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
                    let token = json["token"] as? String {
+                    print("🔑 LoginView received token: \(token.prefix(20))...")
+                    print("🔑 LoginView email: \(email)")
                     await MainActor.run { session.login(token: token) }
                 } else {
+                    print("❌ LoginView: Invalid response format")
                     await MainActor.run { errorMessage = "Error: respuesta inválida del servidor" }
                 }
             } else {
+                print("❌ LoginView: Invalid status code: \(response)")
                 await MainActor.run { errorMessage = "Credenciales inválidas" }
             }
         } catch {
+            print("❌ LoginView error: \(error)")
             await MainActor.run { errorMessage = "Error de conexión: \(error.localizedDescription)" }
         }
     }
