@@ -1,13 +1,28 @@
 import SwiftUI
+import GoogleSignIn
 
 @main
 struct proyecto_finalApp: App {
     @StateObject var session = SessionManager()
+    
+    init() {
+        // Configurar Google Sign-In
+        guard let path = Bundle.main.path(forResource: "GoogleService-Info", ofType: "plist"),
+              let plist = NSDictionary(contentsOfFile: path),
+              let clientId = plist["CLIENT_ID"] as? String else {
+            fatalError("No se pudo cargar GoogleService-Info.plist")
+        }
+        
+        GIDSignIn.sharedInstance.configuration = GIDConfiguration(clientID: clientId)
+    }
 
     var body: some Scene {
         WindowGroup {
             RootView()
                 .environmentObject(session)
+                .onOpenURL { url in
+                    GIDSignIn.sharedInstance.handle(url)
+                }
         }
     }
 }

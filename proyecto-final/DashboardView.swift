@@ -99,6 +99,9 @@ struct DashboardView: View {
     @State private var contractFileName = ""
     @State private var contractShowSuccess = false
     @State private var contractMessage = ""
+    
+    // Control para evitar uploads duplicados
+    @State private var isProcessingUpload = false
 
     var body: some View {
         ScrollView {
@@ -189,7 +192,10 @@ struct DashboardView: View {
                         fileName: $documentFileName,
                         showSuccess: $documentShowSuccess,
                         uploadMessage: $documentMessage,
-                        onPick: { activePicker = .document }
+                        onPick: { 
+                            guard !isProcessingUpload else { return }
+                            activePicker = .document 
+                        }
                     )
 
                     UploadCard(
@@ -202,7 +208,10 @@ struct DashboardView: View {
                         fileName: $contractFileName,
                         showSuccess: $contractShowSuccess,
                         uploadMessage: $contractMessage,
-                        onPick: { activePicker = .contract }
+                        onPick: { 
+                            guard !isProcessingUpload else { return }
+                            activePicker = .contract 
+                        }
                     )
                 }
                 .padding(.horizontal)
@@ -251,6 +260,7 @@ struct DashboardView: View {
         // Sheet único para uploads
         .sheet(item: $activePicker) { picker in
             DocumentPicker { url in
+                print("📁 DocumentPicker callback triggered for: \(url.lastPathComponent)")
                 switch picker {
                 case .document:
                     uploadFile(from: url, to: "http://127.0.0.1:3000/api/processing-pipeline-module/data", type: .document)
@@ -362,12 +372,21 @@ struct DashboardView: View {
         contractShowSuccess = false
         contractMessage = ""
         
+        // Resetear flag de control de uploads
+        isProcessingUpload = false
+        
         refreshTrigger = UUID() // Forzar actualización de UI
         print("🔄 Dashboard state reset complete - Files: \(statsManager.totalFiles), Audits: \(statsManager.completedAudits)")
     }
 
     // MARK: - Upload
     func uploadFile(from url: URL, to endpoint: String, type: PickerType) {
+        // Evitar uploads duplicados
+        guard !isProcessingUpload else {
+            print("⚠️ Upload ya en progreso, ignorando llamada duplicada")
+            return
+        }
+        
         guard let token = session.token else {
             statsManager.errorMessage = "No hay token de autenticación"
             return
@@ -375,6 +394,9 @@ struct DashboardView: View {
 
         let fileName = url.lastPathComponent
         statsManager.errorMessage = nil
+        
+        // Marcar que estamos procesando un upload
+        isProcessingUpload = true
         
         // Configurar estados según el tipo
         switch type {
@@ -433,6 +455,11 @@ struct DashboardView: View {
                     statsManager.errorMessage = "Error subiendo archivo: \(error.localizedDescription)"
                 }
                 print("Upload error: \(error)")
+            }
+            
+            // Resetear el flag de control al final del proceso
+            await MainActor.run {
+                isProcessingUpload = false
             }
         }
     }

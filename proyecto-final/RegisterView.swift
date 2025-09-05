@@ -1,4 +1,5 @@
 import SwiftUI
+import GoogleSignIn
 
 struct RegisterView: View {
     @EnvironmentObject var session: SessionManager
@@ -8,125 +9,337 @@ struct RegisterView: View {
     @State private var rememberMe: Bool = false
     @State private var errorMessage: String?
     @State private var showSuccessMessage = false
+    @State private var isLoading = false
 
     var body: some View {
         NavigationStack {
-            VStack(spacing: 20) {
-                // Logo y título
-                VStack(spacing: 8) {
-                    Image("doc2")
-                        .resizable()
-                        .frame(width: 50, height: 50)
-                        .foregroundColor(.blue)
-                    Text("AuditorIA")
-                        .font(.title)
-                        .bold()
-                    Text("Registro")
-                        .font(.title3)
-                        .foregroundColor(.gray)
-                }
-                .padding(.bottom, 30)
-
-                TextField("Nombre completo", text: $fullName)
-                    .textFieldStyle(RoundedBorderTextFieldStyle())
-                    .autocapitalization(.words)
-
-
-                TextField("Correo Electrónico", text: $email)
-                    .textFieldStyle(RoundedBorderTextFieldStyle())
-                    .autocapitalization(.none)
-                    .keyboardType(.emailAddress)
-
-                SecureField("Contraseña", text: $password)
-                    .textFieldStyle(RoundedBorderTextFieldStyle())
-
-                HStack {
-                    Toggle("Recordarme", isOn: $rememberMe)
-                        .toggleStyle(CheckboxToggleStyle())
-                    Spacer()
-                }
-
-                // Botón de registro
-                Button("Registrarse") {
-                    Task {
-                        await register()
-                    }
-                }
-                .frame(maxWidth: .infinity)
-                .padding()
-                .background(Color.blue)
-                .foregroundColor(.white)
-                .cornerRadius(12)
-
-                if let errorMessage = errorMessage {
-                    Text(errorMessage)
-                        .foregroundColor(.red)
-                        .font(.footnote)
-                        .multilineTextAlignment(.leading)
-                }
-                
-                if showSuccessMessage {
-                    VStack(spacing: 12) {
-                        Text("✅ ¡Usuario registrado exitosamente!")
-                            .foregroundColor(.green)
-                            .font(.headline)
-                            .multilineTextAlignment(.center)
+            ScrollView {
+                VStack(spacing: 0) {
+                    // Header con gradiente
+                    VStack(spacing: 24) {
+                        // Logo y título
+                        VStack(spacing: 16) {
+                            ZStack {
+                                Circle()
+                                    .fill(
+                                        LinearGradient(
+                                            gradient: Gradient(colors: [Color.purple, Color.blue]),
+                                            startPoint: .topLeading,
+                                            endPoint: .bottomTrailing
+                                        )
+                                    )
+                                    .frame(width: 80, height: 80)
+                                
+                                Image("doc2")
+                                    .resizable()
+                                    .frame(width: 40, height: 40)
+                                    .foregroundColor(.white)
+                            }
+                            
+                            VStack(spacing: 8) {
+                                Text("AuditorIA")
+                                    .font(.largeTitle.bold())
+                                    .foregroundColor(.white)
+                                Text("Crea tu cuenta")
+                                    .font(.title2)
+                                    .foregroundColor(.white.opacity(0.9))
+                            }
+                        }
                         
-                        Text("Por favor inicia sesión con tus credenciales")
-                            .foregroundColor(.secondary)
-                            .font(.footnote)
-                            .multilineTextAlignment(.center)
-                        
-                        NavigationLink(destination: LoginView()) {
-                            Text("Ir al Login")
-                                .font(.subheadline.bold())
-                                .foregroundColor(.white)
-                                .padding()
-                                .frame(maxWidth: .infinity)
-                                .background(Color.blue)
-                                .cornerRadius(12)
+                        // Formulario
+                        VStack(spacing: 20) {
+                            // Campo de nombre completo
+                            VStack(alignment: .leading, spacing: 8) {
+                                Text("Nombre Completo")
+                                    .font(.subheadline.bold())
+                                    .foregroundColor(.white.opacity(0.9))
+                                
+                                TextField("Tu nombre completo", text: $fullName)
+                                    .textFieldStyle(PlainTextFieldStyle())
+                                    .autocapitalization(.words)
+                                    .padding(.horizontal, 16)
+                                    .padding(.vertical, 14)
+                                    .background(Color.white.opacity(0.2))
+                                    .cornerRadius(12)
+                                    .foregroundColor(.white)
+                                    .accentColor(.white)
+                                    .overlay(
+                                        Group {
+                                            if fullName.isEmpty {
+                                                HStack {
+                                                    Text("Tu nombre completo")
+                                                        .foregroundColor(.white.opacity(0.6))
+                                                        .font(.system(size: 16))
+                                                    Spacer()
+                                                }
+                                                .padding(.horizontal, 16)
+                                            }
+                                        }
+                                    )
+                            }
+                            
+                            // Campo de email
+                            VStack(alignment: .leading, spacing: 8) {
+                                Text("Correo Electrónico")
+                                    .font(.subheadline.bold())
+                                    .foregroundColor(.white.opacity(0.9))
+                                
+                                TextField("tu@email.com", text: $email)
+                                    .textFieldStyle(PlainTextFieldStyle())
+                                    .autocapitalization(.none)
+                                    .keyboardType(.emailAddress)
+                                    .padding(.horizontal, 16)
+                                    .padding(.vertical, 14)
+                                    .background(Color.white.opacity(0.2))
+                                    .cornerRadius(12)
+                                    .foregroundColor(.white)
+                                    .accentColor(.white)
+                                    .overlay(
+                                        Group {
+                                            if email.isEmpty {
+                                                HStack {
+                                                    Text("tu@email.com")
+                                                        .foregroundColor(.white.opacity(0.6))
+                                                        .font(.system(size: 16))
+                                                    Spacer()
+                                                }
+                                                .padding(.horizontal, 16)
+                                            }
+                                        }
+                                    )
+                            }
+                            
+                            // Campo de contraseña
+                            VStack(alignment: .leading, spacing: 8) {
+                                Text("Contraseña")
+                                    .font(.subheadline.bold())
+                                    .foregroundColor(.white.opacity(0.9))
+                                
+                                SecureField("••••••••", text: $password)
+                                    .textFieldStyle(PlainTextFieldStyle())
+                                    .padding(.horizontal, 16)
+                                    .padding(.vertical, 14)
+                                    .background(Color.white.opacity(0.2))
+                                    .cornerRadius(12)
+                                    .foregroundColor(.white)
+                                    .accentColor(.white)
+                                    .overlay(
+                                        Group {
+                                            if password.isEmpty {
+                                                HStack {
+                                                    Text("••••••••")
+                                                        .foregroundColor(.white.opacity(0.6))
+                                                        .font(.system(size: 16))
+                                                    Spacer()
+                                                }
+                                                .padding(.horizontal, 16)
+                                            }
+                                        }
+                                    )
+                            }
+                            
+                            // Recordarme
+                            HStack {
+                                Button(action: { rememberMe.toggle() }) {
+                                    HStack(spacing: 8) {
+                                        Image(systemName: rememberMe ? "checkmark.square.fill" : "square")
+                                            .foregroundColor(.white)
+                                        Text("Recordarme")
+                                            .font(.subheadline)
+                                            .foregroundColor(.white.opacity(0.9))
+                                    }
+                                }
+                                Spacer()
+                            }
                         }
                     }
-                    .padding()
-                    .background(Color.green.opacity(0.1))
-                    .cornerRadius(12)
-                }
-
-                Text("o continúa con")
-                    .foregroundColor(.gray)
-
-                // Botones sociales
-                Button(action: {
-                    // Acción registro Google
-                }) {
-                    HStack {
-                        Image("google")
-                            .resizable()
-                            .frame(width: 24, height: 24)
-                        Text("Continuar con Google")
+                    .padding(.horizontal, 24)
+                    .padding(.vertical, 40)
+                    .background(
+                        LinearGradient(
+                            gradient: Gradient(colors: [Color.purple, Color.blue]),
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
+                    )
+                    .cornerRadius(30, corners: [.bottomLeft, .bottomRight])
+                    .shadow(color: .purple.opacity(0.3), radius: 15, x: 0, y: 8)
+                    
+                    // Contenido principal
+                    VStack(spacing: 24) {
+                        // Botón de registro
+                        Button(action: {
+                            Task { await register() }
+                        }) {
+                            HStack(spacing: 12) {
+                                if isLoading {
+                                    ProgressView()
+                                        .scaleEffect(0.8)
+                                        .foregroundColor(.white)
+                                } else {
+                                    Image(systemName: "person.badge.plus")
+                                        .font(.system(size: 18))
+                                }
+                                
+                                Text(isLoading ? "Creando cuenta..." : "Crear Cuenta")
+                                    .font(.headline.bold())
+                            }
+                            .foregroundColor(.white)
+                            .padding(.horizontal, 32)
+                            .padding(.vertical, 18)
+                            .frame(maxWidth: .infinity)
+                            .background(
+                                LinearGradient(
+                                    gradient: Gradient(colors: [Color.purple, Color.blue]),
+                                    startPoint: .leading,
+                                    endPoint: .trailing
+                                )
+                            )
+                            .cornerRadius(16)
+                            .shadow(color: .purple.opacity(0.3), radius: 8, x: 0, y: 4)
+                        }
+                        .disabled(isLoading)
+                        .opacity(isLoading ? 0.7 : 1.0)
+                        
+                        // Mensaje de error
+                        if let errorMessage = errorMessage {
+                            HStack(spacing: 8) {
+                                Image(systemName: "exclamationmark.triangle.fill")
+                                    .foregroundColor(.red)
+                                Text(errorMessage)
+                                    .font(.subheadline)
+                                    .foregroundColor(.red)
+                            }
+                            .padding(.horizontal, 16)
+                            .padding(.vertical, 12)
+                            .background(Color.red.opacity(0.1))
+                            .cornerRadius(12)
+                        }
+                        
+                        // Mensaje de éxito
+                        if showSuccessMessage {
+                            VStack(spacing: 16) {
+                                HStack(spacing: 8) {
+                                    Image(systemName: "checkmark.circle.fill")
+                                        .foregroundColor(.green)
+                                    Text("¡Usuario registrado exitosamente!")
+                                        .font(.headline)
+                                        .foregroundColor(.green)
+                                }
+                                
+                                Text("Por favor inicia sesión con tus credenciales")
+                                    .font(.subheadline)
+                                    .foregroundColor(.secondary)
+                                    .multilineTextAlignment(.center)
+                                
+                                NavigationLink(destination: LoginView()) {
+                                    HStack(spacing: 8) {
+                                        Image(systemName: "arrow.right.circle.fill")
+                                        Text("Ir al Login")
+                                    }
+                                    .font(.subheadline.bold())
+                                    .foregroundColor(.white)
+                                    .padding(.horizontal, 24)
+                                    .padding(.vertical, 12)
+                                    .background(
+                                        LinearGradient(
+                                            gradient: Gradient(colors: [Color.blue, Color.purple]),
+                                            startPoint: .leading,
+                                            endPoint: .trailing
+                                        )
+                                    )
+                                    .cornerRadius(12)
+                                }
+                            }
+                            .padding(20)
+                            .background(Color.green.opacity(0.1))
+                            .cornerRadius(16)
+                        }
+                        
+                        // Divider
+                        HStack {
+                            Rectangle()
+                                .fill(Color.gray.opacity(0.3))
+                                .frame(height: 1)
+                            Text("o continúa con")
+                                .font(.subheadline)
+                                .foregroundColor(.gray)
+                                .padding(.horizontal, 16)
+                            Rectangle()
+                                .fill(Color.gray.opacity(0.3))
+                                .frame(height: 1)
+                        }
+                        
+                        // Botones sociales
+                        VStack(spacing: 12) {
+                            Button(action: {
+                                Task { await registerWithGoogle() }
+                            }) {
+                                HStack(spacing: 12) {
+                                    Image("google")
+                                        .resizable()
+                                        .frame(width: 20, height: 20)
+                                    Text("Continuar con Google")
+                                        .font(.subheadline.bold())
+                                }
+                                .foregroundColor(.primary)
+                                .padding(.horizontal, 20)
+                                .padding(.vertical, 14)
+                                .frame(maxWidth: .infinity)
+                                .background(Color.white)
+                                .cornerRadius(12)
+                                .shadow(color: .black.opacity(0.1), radius: 4, x: 0, y: 2)
+                            }
+                            
+                            Button(action: {
+                                // Acción registro GitHub
+                            }) {
+                                HStack(spacing: 12) {
+                                    Image("github")
+                                        .resizable()
+                                        .frame(width: 20, height: 20)
+                                    Text("Continuar con GitHub")
+                                        .font(.subheadline.bold())
+                                }
+                                .foregroundColor(.primary)
+                                .padding(.horizontal, 20)
+                                .padding(.vertical, 14)
+                                .frame(maxWidth: .infinity)
+                                .background(Color.white)
+                                .cornerRadius(12)
+                                .shadow(color: .black.opacity(0.1), radius: 4, x: 0, y: 2)
+                            }
+                        }
+                        
+                        // Footer
+                        HStack(spacing: 4) {
+                            Text("¿Ya tienes una cuenta?")
+                                .font(.subheadline)
+                                .foregroundColor(.secondary)
+                            
+                            NavigationLink(destination: LoginView()) {
+                                Text("Inicia sesión aquí")
+                                    .font(.subheadline.bold())
+                                    .foregroundColor(.purple)
+                            }
+                        }
+                        .padding(.top, 20)
                     }
-                    .padding()
-                    .background(Color.white)
-                    .cornerRadius(8)
+                    .padding(.horizontal, 24)
+                    .padding(.top, 40)
                 }
-
-                Button(action: {
-                
-                }) {
-                    HStack {
-                        Image("github")
-                            .resizable()
-                            .frame(width: 24, height: 24)
-                        Text("Continuar con GitHub")
-                    }
-                    .padding()
-                    .background(Color.white)
-                    .cornerRadius(8)
-                }
-
-                Spacer()
             }
-            .padding()
+            .background(
+                LinearGradient(
+                    gradient: Gradient(colors: [
+                        Color.gray.opacity(0.05),
+                        Color.purple.opacity(0.02),
+                        Color.blue.opacity(0.02)
+                    ]),
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                )
+            )
         }
     }
 
@@ -165,9 +378,19 @@ struct RegisterView: View {
     }
 
     func register() async {
+        await MainActor.run {
+            isLoading = true
+            errorMessage = nil
+            showSuccessMessage = false
+        }
+        
         print("🚀 Iniciando registro...")
         
         guard let url = URL(string: "http://localhost:3000/api/auth/register") else {
+            await MainActor.run {
+                isLoading = false
+                errorMessage = "URL inválida"
+            }
             return
         }
         print("✅ URL creada: \(url)")
@@ -182,7 +405,6 @@ struct RegisterView: View {
             "password": password
         ]
         
-        
         do {
             request.httpBody = try JSONSerialization.data(withJSONObject: body)
 
@@ -193,23 +415,16 @@ struct RegisterView: View {
             
         } catch {
             print("❌ Error creando JSON: \(error)")
+            await MainActor.run {
+                isLoading = false
+                errorMessage = "Error creando datos de registro"
+            }
             return
         }
 
         do {
             print("📡 Enviando request...")
             let (data, response) = try await URLSession.shared.data(for: request)
-            
-            // 🐛 DEBUG: Mostrar respuesta completa
-            if let httpResponse = response as? HTTPURLResponse {
-
-            }
-            
-            // 🐛 DEBUG: Mostrar data recibida
-            if let responseString = String(data: data, encoding: .utf8) {
-            } else {
-
-            }
             
             if let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 201 {
                 print("✅ RegisterView: Status code 201 - User created successfully")
@@ -223,6 +438,7 @@ struct RegisterView: View {
                 await MainActor.run {
                     errorMessage = nil // Limpiar errores
                     showSuccessMessage = true // Mostrar mensaje de éxito
+                    isLoading = false
                 }
             } else if let httpResponse = response as? HTTPURLResponse {
                 // 🐛 DEBUG: Manejar otros status codes
@@ -238,16 +454,16 @@ struct RegisterView: View {
                 
                 await MainActor.run {
                     errorMessage = userMessage
+                    isLoading = false
                 }
             } else {
                 print("❌ RegisterView: No HTTP response received")
                 await MainActor.run {
                     errorMessage = "Error: No se recibió respuesta del servidor"
+                    isLoading = false
                 }
             }
         } catch {
-
-        
             if let urlError = error as? URLError {
                 print("   - Código URLError: \(urlError.code.rawValue)")
                 switch urlError.code {
@@ -264,9 +480,100 @@ struct RegisterView: View {
             
             await MainActor.run {
                 errorMessage = "Error de conexión: \(error.localizedDescription)"
+                isLoading = false
             }
         }
+    }
+    
+    // MARK: - Google Sign-In Registration
+    func registerWithGoogle() async {
+        // Verificar que Google Sign-In esté configurado
+        guard GIDSignIn.sharedInstance.configuration != nil else {
+            await MainActor.run {
+                errorMessage = "Google Sign-In no está configurado correctamente"
             }
+            return
+        }
+        
+        guard let presentingViewController = await MainActor.run(body: {
+            UIApplication.shared.connectedScenes
+                .compactMap({ ($0 as? UIWindowScene)?.keyWindow })
+                .first?.rootViewController
+        }) else {
+            await MainActor.run {
+                errorMessage = "No se pudo encontrar el controlador de presentación"
+            }
+            return
+        }
+
+        await MainActor.run {
+            isLoading = true
+            errorMessage = nil
+            showSuccessMessage = false
+        }
+
+        do {
+            let result = try await GIDSignIn.sharedInstance.signIn(withPresenting: presentingViewController)
+            guard let idToken = result.user.idToken?.tokenString else {
+                await MainActor.run {
+                    errorMessage = "No se pudo obtener el ID Token de Google"
+                    isLoading = false
+                }
+                return
+            }
+
+            print("🔑 Google ID Token obtenido para registro: \(idToken.prefix(20))...")
+
+            guard let url = URL(string: "http://localhost:3000/api/auth/google/mobile") else {
+                await MainActor.run {
+                    errorMessage = "URL del servidor inválida"
+                    isLoading = false
+                }
+                return
+            }
+            
+            var request = URLRequest(url: url)
+            request.httpMethod = "POST"
+            request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+            let body: [String: Any] = ["idToken": idToken]
+            request.httpBody = try? JSONSerialization.data(withJSONObject: body)
+
+            let (data, response) = try await URLSession.shared.data(for: request)
+            
+            print("🔍 Respuesta del servidor para registro: \(response)")
+            if let responseString = String(data: data, encoding: .utf8) {
+                print("🔍 Datos de respuesta: \(responseString)")
+            }
+            
+            if let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 201 {
+                if let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+                   let token = json["access_token"] as? String {
+                    print("🔑 Google registro exitoso, token: \(token.prefix(20))...")
+                    await MainActor.run {
+                        session.login(token: token)
+                        isLoading = false
+                    }
+                } else {
+                    await MainActor.run {
+                        errorMessage = "Error: respuesta inválida del servidor"
+                        isLoading = false
+                    }
+                }
+            } else {
+                let statusCode = (response as? HTTPURLResponse)?.statusCode ?? -1
+                await MainActor.run {
+                    errorMessage = "Error en registro con Google (Código: \(statusCode))"
+                    isLoading = false
+                }
+            }
+        } catch {
+            print("❌ Google Sign-In error: \(error)")
+            await MainActor.run {
+                errorMessage = "Error de Google Sign-In: \(error.localizedDescription)"
+                isLoading = false
+            }
+        }
+    }
 }
 
 #Preview {

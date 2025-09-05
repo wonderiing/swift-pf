@@ -77,42 +77,135 @@ struct FileFinder: View {
     
     var body: some View {
         NavigationView {
-            VStack(alignment: .leading, spacing: 16) {
-                Text("📂 Archivos Recientes")
-                    .font(.largeTitle)
-                    .bold()
-                
-                // Buscador
-                HStack {
-                    Image(systemName: "magnifyingglass")
-                    TextField("Buscar archivos...", text: $searchText)
-                        .textFieldStyle(PlainTextFieldStyle())
+            VStack(spacing: 0) {
+                // Header con gradiente
+                VStack(spacing: 20) {
+                    HStack {
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text("📂 Archivos")
+                                .font(.largeTitle.bold())
+                                .foregroundColor(.white)
+                            Text("Gestiona tus archivos y documentos")
+                                .font(.subheadline)
+                                .foregroundColor(.white.opacity(0.9))
+                        }
+                        Spacer()
+                        Image(systemName: "folder.fill")
+                            .font(.title)
+                            .foregroundColor(.white.opacity(0.8))
+                    }
+                    
+                    // Buscador moderno
+                    HStack(spacing: 12) {
+                        Image(systemName: "magnifyingglass")
+                            .foregroundColor(.white.opacity(0.8))
+                            .font(.system(size: 16))
+                        
+                        TextField("Buscar archivos...", text: $searchText)
+                            .textFieldStyle(PlainTextFieldStyle())
+                            .foregroundColor(.white)
+                            .accentColor(.white)
+                        
+                        if !searchText.isEmpty {
+                            Button(action: { searchText = "" }) {
+                                Image(systemName: "xmark.circle.fill")
+                                    .foregroundColor(.white.opacity(0.6))
+                            }
+                        }
+                    }
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 12)
+                    .background(Color.white.opacity(0.2))
+                    .cornerRadius(25)
+                    
+                    // Filtro moderno
+                    ScrollView(.horizontal, showsIndicators: false) {
+                        HStack(spacing: 12) {
+                            ForEach(tipos, id: \.self) { tipo in
+                                Button(action: { selectedTipo = tipo }) {
+                                    Text(tipo)
+                                        .font(.subheadline.bold())
+                                        .foregroundColor(selectedTipo == tipo ? .blue : .white.opacity(0.8))
+                                        .padding(.horizontal, 16)
+                                        .padding(.vertical, 8)
+                                        .background(
+                                            selectedTipo == tipo ? 
+                                            Color.white : Color.white.opacity(0.2)
+                                        )
+                                        .cornerRadius(20)
+                                }
+                            }
+                        }
+                        .padding(.horizontal, 4)
+                    }
                 }
-                .padding()
-                .background(Color(.systemGray6))
-                .cornerRadius(10)
-                
-                // Filtro
-                Picker("Tipo", selection: $selectedTipo) {
-                    ForEach(tipos, id: \.self) { tipo in Text(tipo).tag(tipo) }
-                }
-                .pickerStyle(SegmentedPickerStyle())
+                .padding(.horizontal, 20)
+                .padding(.vertical, 24)
+                .background(
+                    LinearGradient(
+                        gradient: Gradient(colors: [Color.blue, Color.purple]),
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                )
+                .cornerRadius(20, corners: [.bottomLeft, .bottomRight])
+                .shadow(color: .blue.opacity(0.3), radius: 10, x: 0, y: 5)
                 
                 // Lista de Archivos
                 ScrollView {
                     LazyVStack(spacing: 16) {
-                        ForEach(filteredArchivos) { archivo in
-                            ArchivoCard(archivo: archivo)
+                        if filteredArchivos.isEmpty {
+                            emptyStateView
+                        } else {
+                            ForEach(filteredArchivos) { archivo in
+                                ArchivoCard(archivo: archivo)
+                            }
                         }
                     }
+                    .padding(.horizontal, 20)
+                    .padding(.top, 24)
                 }
-                
-                Spacer()
+                .background(
+                    LinearGradient(
+                        gradient: Gradient(colors: [
+                            Color.gray.opacity(0.05),
+                            Color.blue.opacity(0.02),
+                            Color.purple.opacity(0.02)
+                        ]),
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                )
             }
-            .padding()
             .onAppear { viewModel.fetchArchivos() }
             .navigationBarHidden(true)
         }
+    }
+    
+    // MARK: - Empty State View
+    private var emptyStateView: some View {
+        VStack(spacing: 20) {
+            Image(systemName: "folder.badge.plus")
+                .font(.system(size: 64))
+                .foregroundColor(.blue.opacity(0.6))
+            
+            VStack(spacing: 8) {
+                Text("No hay archivos")
+                    .font(.title2.bold())
+                    .foregroundColor(.primary)
+                
+                Text(searchText.isEmpty ? 
+                     "Sube tu primer archivo desde el Dashboard" : 
+                     "No se encontraron archivos con '\(searchText)'")
+                    .font(.subheadline)
+                    .foregroundColor(.secondary)
+                    .multilineTextAlignment(.center)
+            }
+        }
+        .padding(40)
+        .background(Color.white)
+        .cornerRadius(20)
+        .shadow(color: .black.opacity(0.05), radius: 8, x: 0, y: 4)
     }
 }
 
@@ -121,48 +214,115 @@ struct ArchivoCard: View {
     let archivo: Archivo
     
     var color: Color {
-        archivo.tipo.lowercased().contains("csv") || archivo.tipo.lowercased().contains("xlsx") ? .green : .blue
+        switch archivo.tipo.lowercased() {
+        case let t where t.contains("csv") || t.contains("xlsx"):
+            return .green
+        case let t where t.contains("pdf"):
+            return .red
+        case let t where t.contains("doc") || t.contains("txt"):
+            return .blue
+        default:
+            return .purple
+        }
     }
     
     var icon: String {
-        archivo.tipo.lowercased().contains("csv") || archivo.tipo.lowercased().contains("xlsx") ? "doc.text.fill" : "doc.richtext.fill"
+        switch archivo.tipo.lowercased() {
+        case let t where t.contains("csv") || t.contains("xlsx"):
+            return "tablecells.fill"
+        case let t where t.contains("pdf"):
+            return "doc.richtext.fill"
+        case let t where t.contains("doc") || t.contains("txt"):
+            return "doc.text.fill"
+        default:
+            return "doc.fill"
+        }
     }
     
     var body: some View {
         NavigationLink(destination: FileDetail(archivo: archivo)) {
             HStack(spacing: 16) {
-                Image(systemName: icon)
-                    .font(.system(size: 24))
-                    .foregroundColor(.white)
-                    .padding()
-                    .background(color)
-                    .cornerRadius(10)
+                // Icono con gradiente
+                ZStack {
+                    Circle()
+                        .fill(
+                            LinearGradient(
+                                gradient: Gradient(colors: [color, color.opacity(0.7)]),
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            )
+                        )
+                        .frame(width: 50, height: 50)
+                    
+                    Image(systemName: icon)
+                        .font(.system(size: 20, weight: .semibold))
+                        .foregroundColor(.white)
+                }
                 
-                VStack(alignment: .leading, spacing: 4) {
+                // Información del archivo
+                VStack(alignment: .leading, spacing: 6) {
                     Text(archivo.nombre)
-                        .font(.headline)
-                    Text("Subido por \(archivo.subidoPor)")
-                        .font(.subheadline)
-                        .foregroundColor(.gray)
+                        .font(.headline.bold())
+                        .foregroundColor(.primary)
+                        .lineLimit(1)
+                    
+                    HStack(spacing: 8) {
+                        Image(systemName: "person.circle.fill")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                        
+                        Text(archivo.subidoPor)
+                            .font(.subheadline)
+                            .foregroundColor(.secondary)
+                            .lineLimit(1)
+                    }
+                    
+                    HStack(spacing: 4) {
+                        Circle()
+                            .fill(color)
+                            .frame(width: 8, height: 8)
+                        
+                        Text(archivo.tipo.uppercased())
+                            .font(.caption.bold())
+                            .foregroundColor(color)
+                    }
                 }
                 
                 Spacer()
                 
-                Text(archivo.tipo.uppercased())
-                    .font(.caption)
-                    .bold()
-                    .padding(8)
-                    .background(color.opacity(0.15))
-                    .cornerRadius(10)
+                // Indicador de acción
+                VStack(spacing: 4) {
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 12, weight: .bold))
+                        .foregroundColor(.secondary)
+                    
+                    Text("Ver")
+                        .font(.caption2)
+                        .foregroundColor(.secondary)
+                }
             }
-            .padding()
-            .background(Color.white)
-            .cornerRadius(16)
-            .shadow(color: Color.black.opacity(0.05), radius: 4, x: 0, y: 4)
+            .padding(20)
+            .background(
+                RoundedRectangle(cornerRadius: 20)
+                    .fill(Color.white)
+                    .shadow(color: color.opacity(0.1), radius: 8, x: 0, y: 4)
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 20)
+                    .stroke(
+                        LinearGradient(
+                            gradient: Gradient(colors: [color.opacity(0.3), color.opacity(0.1)]),
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        ),
+                        lineWidth: 1
+                    )
+            )
         }
         .buttonStyle(PlainButtonStyle())
     }
 }
+
 
 // MARK: - Preview
 #Preview {

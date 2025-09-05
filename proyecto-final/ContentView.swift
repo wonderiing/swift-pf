@@ -15,106 +15,264 @@ struct LoginView: View {
     @State private var password: String = ""
     @State private var rememberMe: Bool = false
     @State private var errorMessage: String?
+    @State private var isLoading = false
 
     var body: some View {
         NavigationStack {
-            VStack(spacing: 20) {
-                // Logo y título
-                VStack(spacing: 8) {
-                    Image("doc2")
-                        .resizable()
-                        .frame(width: 50, height: 50)
-                        .foregroundColor(.blue)
-                    Text("AuditorIA")
-                        .font(.title)
-                        .bold()
-                    Text("Inicia Sesión")
-                        .font(.title3)
-                        .foregroundColor(.gray)
-                }
-                .padding(.bottom, 30)
-
-                TextField("Correo Electrónico", text: $email)
-                    .textFieldStyle(RoundedBorderTextFieldStyle())
-                    .autocapitalization(.none)
-                    .keyboardType(.emailAddress)
-
-                SecureField("Contraseña", text: $password)
-                    .textFieldStyle(RoundedBorderTextFieldStyle())
-
-                HStack {
-                    Toggle("Recordarme", isOn: $rememberMe)
-                        .toggleStyle(CheckboxToggleStyle())
-                    Spacer()
-                    Button("¿Olvidaste tu contraseña?") {
-                        // Lógica extra
+            ScrollView {
+                VStack(spacing: 0) {
+                    // Header con gradiente
+                    VStack(spacing: 24) {
+                        // Logo y título
+                        VStack(spacing: 16) {
+                            ZStack {
+                                Circle()
+                                    .fill(
+                                        LinearGradient(
+                                            gradient: Gradient(colors: [Color.blue, Color.purple]),
+                                            startPoint: .topLeading,
+                                            endPoint: .bottomTrailing
+                                        )
+                                    )
+                                    .frame(width: 80, height: 80)
+                                
+                                Image("doc2")
+                                    .resizable()
+                                    .frame(width: 40, height: 40)
+                                    .foregroundColor(.white)
+                            }
+                            
+                            VStack(spacing: 8) {
+                                Text("AuditorIA")
+                                    .font(.largeTitle.bold())
+                                    .foregroundColor(.white)
+                                Text("Inicia Sesión")
+                                    .font(.title2)
+                                    .foregroundColor(.white.opacity(0.9))
+                            }
+                        }
+                        
+                        // Formulario
+                        VStack(spacing: 20) {
+                            // Campo de email
+                            VStack(alignment: .leading, spacing: 8) {
+                                Text("Correo Electrónico")
+                                    .font(.subheadline.bold())
+                                    .foregroundColor(.white.opacity(0.9))
+                                
+                                TextField("", text: $email, prompt: Text("tu@email.com").foregroundColor(.white.opacity(0.7)))
+                                    .autocapitalization(.none)
+                                    .keyboardType(.emailAddress)
+                                    .padding(.horizontal, 16)
+                                    .padding(.vertical, 14)
+                                    .background(Color.white.opacity(0.2))
+                                    .cornerRadius(12)
+                                    .foregroundColor(.white)
+                                    .accentColor(.white)
+                            }
+                            
+                            // Campo de contraseña
+                            VStack(alignment: .leading, spacing: 8) {
+                                Text("Contraseña")
+                                    .font(.subheadline.bold())
+                                    .foregroundColor(.white.opacity(0.9))
+                                
+                                SecureField("", text: $password, prompt: Text("••••••••").foregroundColor(.white.opacity(0.7)))
+                                    .padding(.horizontal, 16)
+                                    .padding(.vertical, 14)
+                                    .background(Color.white.opacity(0.2))
+                                    .cornerRadius(12)
+                                    .foregroundColor(.white)
+                                    .accentColor(.white)
+                            }
+                            
+                            // Recordarme y olvidé contraseña
+                            HStack {
+                                Button(action: { rememberMe.toggle() }) {
+                                    HStack(spacing: 8) {
+                                        Image(systemName: rememberMe ? "checkmark.square.fill" : "square")
+                                            .foregroundColor(.white)
+                                        Text("Recordarme")
+                                            .font(.subheadline)
+                                            .foregroundColor(.white.opacity(0.9))
+                                    }
+                                }
+                                
+                                Spacer()
+                                
+                                Button("¿Olvidaste tu contraseña?") {
+                                    // Lógica extra
+                                }
+                                .font(.subheadline)
+                                .foregroundColor(.white.opacity(0.8))
+                            }
+                        }
                     }
-                    .font(.footnote)
-                }
-
-                // Botón de login
-                Button("Iniciar Sesión") {
-                    Task { await login() }
-                }
-                .frame(maxWidth: .infinity)
-                .padding()
-                .background(Color.blue)
-                .foregroundColor(.white)
-                .cornerRadius(12)
-
-                if let errorMessage = errorMessage {
-                    Text(errorMessage)
-                        .foregroundColor(.red)
-                        .font(.footnote)
-                }
-
-                Text("o continúa con")
-                    .foregroundColor(.gray)
-
-                Button(action: {
-                    Task { await loginWithGoogle() }
-                }) {
-                    HStack {
-                        Image("google")
-                            .resizable()
-                            .frame(width: 24, height: 24)
-                        Text("Continuar con Google")
+                    .padding(.horizontal, 24)
+                    .padding(.vertical, 40)
+                    .background(
+                        LinearGradient(
+                            gradient: Gradient(colors: [Color.blue, Color.purple]),
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
+                    )
+                    .cornerRadius(30, corners: [.bottomLeft, .bottomRight])
+                    .shadow(color: .blue.opacity(0.3), radius: 15, x: 0, y: 8)
+                    
+                    // Contenido principal
+                    VStack(spacing: 24) {
+                        // Botón de login
+                        Button(action: {
+                            Task { await login() }
+                        }) {
+                            HStack(spacing: 12) {
+                                if isLoading {
+                                    ProgressView()
+                                        .scaleEffect(0.8)
+                                        .foregroundColor(.white)
+                                } else {
+                                    Image(systemName: "arrow.right.circle.fill")
+                                        .font(.system(size: 18))
+                                }
+                                
+                                Text(isLoading ? "Iniciando sesión..." : "Iniciar Sesión")
+                                    .font(.headline.bold())
+                            }
+                            .foregroundColor(.white)
+                            .padding(.horizontal, 32)
+                            .padding(.vertical, 18)
+                            .frame(maxWidth: .infinity)
+                            .background(
+                                LinearGradient(
+                                    gradient: Gradient(colors: [Color.blue, Color.purple]),
+                                    startPoint: .leading,
+                                    endPoint: .trailing
+                                )
+                            )
+                            .cornerRadius(16)
+                            .shadow(color: .blue.opacity(0.3), radius: 8, x: 0, y: 4)
+                        }
+                        .disabled(isLoading)
+                        .opacity(isLoading ? 0.7 : 1.0)
+                        
+                        // Mensaje de error
+                        if let errorMessage = errorMessage {
+                            HStack(spacing: 8) {
+                                Image(systemName: "exclamationmark.triangle.fill")
+                                    .foregroundColor(.red)
+                                Text(errorMessage)
+                                    .font(.subheadline)
+                                    .foregroundColor(.red)
+                            }
+                            .padding(.horizontal, 16)
+                            .padding(.vertical, 12)
+                            .background(Color.red.opacity(0.1))
+                            .cornerRadius(12)
+                        }
+                        
+                        // Divider
+                        HStack {
+                            Rectangle()
+                                .fill(Color.gray.opacity(0.3))
+                                .frame(height: 1)
+                            Text("o continúa con")
+                                .font(.subheadline)
+                                .foregroundColor(.gray)
+                                .padding(.horizontal, 16)
+                            Rectangle()
+                                .fill(Color.gray.opacity(0.3))
+                                .frame(height: 1)
+                        }
+                        
+                        // Botones sociales
+                        VStack(spacing: 12) {
+                            Button(action: {
+                                Task { await loginWithGoogle() }
+                            }) {
+                                HStack(spacing: 12) {
+                                    Image("google")
+                                        .resizable()
+                                        .frame(width: 20, height: 20)
+                                    Text("Continuar con Google")
+                                        .font(.subheadline.bold())
+                                }
+                                .foregroundColor(.primary)
+                                .padding(.horizontal, 20)
+                                .padding(.vertical, 14)
+                                .frame(maxWidth: .infinity)
+                                .background(Color.white)
+                                .cornerRadius(12)
+                                .shadow(color: .black.opacity(0.1), radius: 4, x: 0, y: 2)
+                            }
+                            .disabled(isLoading)
+                            
+                            Button(action: {
+                                // Acción login GitHub
+                            }) {
+                                HStack(spacing: 12) {
+                                    Image("github")
+                                        .resizable()
+                                        .frame(width: 20, height: 20)
+                                    Text("Continuar con GitHub")
+                                        .font(.subheadline.bold())
+                                }
+                                .foregroundColor(.primary)
+                                .padding(.horizontal, 20)
+                                .padding(.vertical, 14)
+                                .frame(maxWidth: .infinity)
+                                .background(Color.white)
+                                .cornerRadius(12)
+                                .shadow(color: .black.opacity(0.1), radius: 4, x: 0, y: 2)
+                            }
+                        }
+                        
+                        // Footer
+                        HStack(spacing: 4) {
+                            Text("¿No tienes una cuenta?")
+                                .font(.subheadline)
+                                .foregroundColor(.secondary)
+                            
+                            NavigationLink(destination: RegisterView()) {
+                                Text("Regístrate aquí")
+                                    .font(.subheadline.bold())
+                                    .foregroundColor(.blue)
+                            }
+                        }
+                        .padding(.top, 20)
                     }
-                    .padding()
-                    .background(Color.white)
-                    .cornerRadius(8)
-                }
-
-                Button(action: {
-                    // Acción login GitHub
-                }) {
-                    HStack {
-                        Image("github")
-                            .resizable()
-                            .frame(width: 24, height: 24)
-                        Text("Continuar con GitHub")
-                    }
-                    .padding()
-                    .background(Color.white)
-                    .cornerRadius(8)
-                }
-
-                Spacer()
-
-                // Footer
-                NavigationLink(destination: RegisterView()) {
-                    Text("¿No tienes una cuenta? Regístrate aquí")
-                        .font(.footnote)
-                        .foregroundColor(.blue)
+                    .padding(.horizontal, 24)
+                    .padding(.top, 40)
                 }
             }
-            .padding()
+            .background(
+                LinearGradient(
+                    gradient: Gradient(colors: [
+                        Color.gray.opacity(0.05),
+                        Color.blue.opacity(0.02),
+                        Color.purple.opacity(0.02)
+                    ]),
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                )
+            )
         }
     }
 
     // MARK: - Funciones de login
     func login() async {
-        guard let url = URL(string: "http://localhost:3000/api/auth/login") else { return }
+        await MainActor.run {
+            isLoading = true
+            errorMessage = nil
+        }
+        
+        guard let url = URL(string: "http://localhost:3000/api/auth/login") else {
+            await MainActor.run {
+                isLoading = false
+                errorMessage = "URL inválida"
+            }
+            return
+        }
 
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
@@ -133,34 +291,78 @@ struct LoginView: View {
                    let token = json["token"] as? String {
                     print("🔑 LoginView received token: \(token.prefix(20))...")
                     print("🔑 LoginView email: \(email)")
-                    await MainActor.run { session.login(token: token) }
+                    await MainActor.run {
+                        session.login(token: token)
+                        isLoading = false
+                    }
                 } else {
                     print("❌ LoginView: Invalid response format")
-                    await MainActor.run { errorMessage = "Error: respuesta inválida del servidor" }
+                    await MainActor.run {
+                        errorMessage = "Error: respuesta inválida del servidor"
+                        isLoading = false
+                    }
                 }
             } else {
                 print("❌ LoginView: Invalid status code: \(response)")
-                await MainActor.run { errorMessage = "Credenciales inválidas" }
+                await MainActor.run {
+                    errorMessage = "Credenciales inválidas"
+                    isLoading = false
+                }
             }
         } catch {
             print("❌ LoginView error: \(error)")
-            await MainActor.run { errorMessage = "Error de conexión: \(error.localizedDescription)" }
+            await MainActor.run {
+                errorMessage = "Error de conexión: \(error.localizedDescription)"
+                isLoading = false
+            }
         }
     }
 
     func loginWithGoogle() async {
-        guard let presentingViewController = UIApplication.shared.connectedScenes
-            .compactMap({ ($0 as? UIWindowScene)?.keyWindow })
-            .first?.rootViewController else { return }
+        // Verificar que Google Sign-In esté configurado
+        guard GIDSignIn.sharedInstance.configuration != nil else {
+            await MainActor.run {
+                errorMessage = "Google Sign-In no está configurado correctamente"
+            }
+            return
+        }
+        
+        guard let presentingViewController = await MainActor.run(body: {
+            UIApplication.shared.connectedScenes
+                .compactMap({ ($0 as? UIWindowScene)?.keyWindow })
+                .first?.rootViewController
+        }) else {
+            await MainActor.run {
+                errorMessage = "No se pudo encontrar el controlador de presentación"
+            }
+            return
+        }
+
+        await MainActor.run {
+            isLoading = true
+            errorMessage = nil
+        }
 
         do {
             let result = try await GIDSignIn.sharedInstance.signIn(withPresenting: presentingViewController)
             guard let idToken = result.user.idToken?.tokenString else {
-                await MainActor.run { errorMessage = "No se pudo obtener el ID Token de Google" }
+                await MainActor.run {
+                    errorMessage = "No se pudo obtener el ID Token de Google"
+                    isLoading = false
+                }
                 return
             }
 
-            guard let url = URL(string: "http://localhost:3000/api/auth/google/mobile") else { return }
+            print("🔑 Google ID Token obtenido: \(idToken.prefix(20))...")
+
+            guard let url = URL(string: "http://localhost:3000/api/auth/google/mobile") else {
+                await MainActor.run {
+                    errorMessage = "URL del servidor inválida"
+                    isLoading = false
+                }
+                return
+            }
+            
             var request = URLRequest(url: url)
             request.httpMethod = "POST"
             request.setValue("application/json", forHTTPHeaderField: "Content-Type")
@@ -168,21 +370,43 @@ struct LoginView: View {
             request.httpBody = try? JSONSerialization.data(withJSONObject: body)
 
             let (data, response) = try await URLSession.shared.data(for: request)
+            
+            print("🔍 Respuesta del servidor: \(response)")
+            if let responseString = String(data: data, encoding: .utf8) {
+                print("🔍 Datos de respuesta: \(responseString)")
+            }
+            
             if let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 201 {
                 if let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
                    let token = json["access_token"] as? String {
-                    await MainActor.run { session.login(token: token) }
+                    print("🔑 Google login exitoso, token: \(token.prefix(20))...")
+                    await MainActor.run {
+                        session.login(token: token)
+                        isLoading = false
+                    }
                 } else {
-                    await MainActor.run { errorMessage = "Error: respuesta inválida del servidor" }
+                    await MainActor.run {
+                        errorMessage = "Error: respuesta inválida del servidor"
+                        isLoading = false
+                    }
                 }
             } else {
-                await MainActor.run { errorMessage = "Error en login con Google" }
+                let statusCode = (response as? HTTPURLResponse)?.statusCode ?? -1
+                await MainActor.run {
+                    errorMessage = "Error en login con Google (Código: \(statusCode))"
+                    isLoading = false
+                }
             }
         } catch {
-            await MainActor.run { errorMessage = "Error de Google Sign-In: \(error.localizedDescription)" }
+            print("❌ Google Sign-In error: \(error)")
+            await MainActor.run {
+                errorMessage = "Error de Google Sign-In: \(error.localizedDescription)"
+                isLoading = false
+            }
         }
     }
 }
+
 
 // MARK: - Toggle personalizado
 struct CheckboxToggleStyle: ToggleStyle {
@@ -197,9 +421,4 @@ struct CheckboxToggleStyle: ToggleStyle {
     }
 }
 
-// MARK: - Preview
-#Preview {
-    LoginView()
-        .environmentObject(SessionManager())
-}
 
