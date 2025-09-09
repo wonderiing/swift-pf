@@ -289,28 +289,23 @@ struct LoginView: View {
             if let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 201 {
                 if let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
                    let token = json["token"] as? String {
-                    print("🔑 LoginView received token: \(token.prefix(20))...")
-                    print("🔑 LoginView email: \(email)")
                     await MainActor.run {
                         session.login(token: token)
                         isLoading = false
                     }
                 } else {
-                    print("❌ LoginView: Invalid response format")
                     await MainActor.run {
                         errorMessage = "Error: respuesta inválida del servidor"
                         isLoading = false
                     }
                 }
             } else {
-                print("❌ LoginView: Invalid status code: \(response)")
                 await MainActor.run {
                     errorMessage = "Credenciales inválidas"
                     isLoading = false
                 }
             }
         } catch {
-            print("❌ LoginView error: \(error)")
             await MainActor.run {
                 errorMessage = "Error de conexión: \(error.localizedDescription)"
                 isLoading = false
@@ -353,7 +348,6 @@ struct LoginView: View {
                 return
             }
 
-            print("🔑 Google ID Token obtenido: \(idToken.prefix(20))...")
 
             guard let url = URL(string: "http://localhost:3000/api/auth/google/mobile") else {
                 await MainActor.run {
@@ -371,15 +365,12 @@ struct LoginView: View {
 
             let (data, response) = try await URLSession.shared.data(for: request)
             
-            print("🔍 Respuesta del servidor: \(response)")
             if let responseString = String(data: data, encoding: .utf8) {
-                print("🔍 Datos de respuesta: \(responseString)")
             }
             
             if let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 201 {
                 if let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
                    let token = json["access_token"] as? String {
-                    print("🔑 Google login exitoso, token: \(token.prefix(20))...")
                     await MainActor.run {
                         session.login(token: token)
                         isLoading = false
@@ -398,7 +389,6 @@ struct LoginView: View {
                 }
             }
         } catch {
-            print("❌ Google Sign-In error: \(error)")
             await MainActor.run {
                 errorMessage = "Error de Google Sign-In: \(error.localizedDescription)"
                 isLoading = false

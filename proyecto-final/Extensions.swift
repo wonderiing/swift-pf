@@ -1,5 +1,10 @@
 import SwiftUI
 
+// MARK: - Notificaciones
+extension Notification.Name {
+    static let fileDeleted = Notification.Name("fileDeleted")
+}
+
 // MARK: - Extensión para cornerRadius personalizado
 extension View {
     func cornerRadius(_ radius: CGFloat, corners: UIRectCorner) -> some View {

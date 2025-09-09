@@ -85,9 +85,9 @@ struct FileDetail: View {
     
     var body: some View {
         VStack(spacing: 0) {
-            // Encabezado moderno con gradiente
-            VStack(spacing: 16) {
-                HStack(spacing: 16) {
+            // Encabezado moderno con gradiente - Reducido el espaciado
+            VStack(spacing: 12) {
+                HStack(spacing: 12) {
                     ZStack {
                         Circle()
                             .fill(
@@ -97,57 +97,57 @@ struct FileDetail: View {
                                     endPoint: .bottomTrailing
                                 )
                             )
-                            .frame(width: 60, height: 60)
+                            .frame(width: 50, height: 50)
                         
-                Image(systemName: archivo.tipo.lowercased().contains("csv") ? "doc.text.fill" :
-                        archivo.tipo.lowercased().contains("pdf") ? "doc.richtext.fill" : "doc.plaintext.fill")
-                            .font(.system(size: 24))
-                    .foregroundColor(.white)
+                        Image(systemName: archivo.tipo.lowercased().contains("csv") ? "doc.text.fill" :
+                                archivo.tipo.lowercased().contains("pdf") ? "doc.richtext.fill" : "doc.plaintext.fill")
+                            .font(.system(size: 20))
+                            .foregroundColor(.white)
                     }
                 
-                    VStack(alignment: .leading, spacing: 4) {
-                    Text(archivo.nombre)
-                            .font(.title2.bold())
+                    VStack(alignment: .leading, spacing: 3) {
+                        Text(archivo.nombre)
+                            .font(.title3.bold())
                             .foregroundColor(.white)
                             .lineLimit(2)
-                    Text("Subido por \(archivo.subidoPor)")
-                        .font(.subheadline)
+                        Text("Subido por \(archivo.subidoPor)")
+                            .font(.caption)
                             .foregroundColor(.white.opacity(0.8))
                     }
                     
                     Spacer()
                     
-                    VStack(spacing: 4) {
-                        Text(archivo.tipo.uppercased())
-                            .font(.caption.bold())
-                            .foregroundColor(.white)
-                            .padding(.horizontal, 12)
-                            .padding(.vertical, 6)
-                            .background(Color.white.opacity(0.2))
-                            .cornerRadius(12)
-                    }
+                    Text(archivo.tipo.uppercased())
+                        .font(.caption2.bold())
+                        .foregroundColor(.white)
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 4)
+                        .background(Color.white.opacity(0.2))
+                        .cornerRadius(8)
                 }
                 
                 // Tabs modernos
                 HStack(spacing: 0) {
                     ForEach(["Vista Previa", "Análisis IA", "Predicción", "Notas"], id: \.self) { tab in
                         Button(action: { selectedTab = tab }) {
-                            VStack(spacing: 8) {
+                            VStack(spacing: 6) {
                                 Text(tab)
-                                    .font(.subheadline.bold())
+                                    .font(.caption.bold())
                                     .foregroundColor(selectedTab == tab ? .white : .white.opacity(0.7))
                                 
                                 Rectangle()
                                     .fill(selectedTab == tab ? Color.white : Color.clear)
-                                    .frame(height: 3)
-                                    .cornerRadius(1.5)
+                                    .frame(height: 2)
+                                    .cornerRadius(1)
                             }
                         }
                         .frame(maxWidth: .infinity)
                     }
                 }
             }
-            .padding(20)
+            .padding(.horizontal, 16)
+            .padding(.top, 12)
+            .padding(.bottom, 16)
             .background(
                 LinearGradient(
                     gradient: Gradient(colors: [Color.blue, Color.purple]),
@@ -155,23 +155,23 @@ struct FileDetail: View {
                     endPoint: .bottomTrailing
                 )
             )
-            .cornerRadius(20, corners: [.bottomLeft, .bottomRight])
-            .shadow(color: .blue.opacity(0.3), radius: 10, x: 0, y: 5)
+            .cornerRadius(16, corners: [.bottomLeft, .bottomRight])
+            .shadow(color: .blue.opacity(0.3), radius: 8, x: 0, y: 4)
             
             // Contenido principal con padding
             ScrollView {
                 VStack(spacing: 0) {
-            if selectedTab == "Vista Previa" {
-                previewView()
+                    if selectedTab == "Vista Previa" {
+                        previewView()
                     } else if selectedTab == "Análisis IA" {
                         analysisView()
                     } else if selectedTab == "Predicción" {
                         predictionView()
-            } else {
+                    } else {
                         notesView()
                     }
                 }
-                .padding(.top, 20)
+                .padding(.top, 16)
             }
         }
         .background(
@@ -191,6 +191,7 @@ struct FileDetail: View {
             viewModel.fetchDetalle(for: archivo.id)
             viewModel.fetchPreview(for: archivo)
             notesViewModel.fetchAuditRecords(fileId: archivo.id)
+            notesViewModel.loadExistingNotes(for: archivo.id)
         }
     }
     
@@ -470,15 +471,29 @@ struct FileDetail: View {
                         .font(.headline)
                         .foregroundColor(.primary)
                     
-                    TextEditor(text: $notesViewModel.currentNotes)
+                    if notesViewModel.isLoadingNotes {
+                        HStack {
+                            ProgressView()
+                                .scaleEffect(0.8)
+                            Text("Cargando notas existentes...")
+                                .font(.subheadline)
+                                .foregroundColor(.secondary)
+                        }
                         .frame(minHeight: 100)
-                        .padding(12)
+                        .frame(maxWidth: .infinity)
                         .background(Color(.systemGray6))
                         .cornerRadius(12)
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 12)
-                                .stroke(Color.blue.opacity(0.3), lineWidth: 1)
-                        )
+                    } else {
+                        TextEditor(text: $notesViewModel.currentNotes)
+                            .frame(minHeight: 100)
+                            .padding(12)
+                            .background(Color(.systemGray6))
+                            .cornerRadius(12)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 12)
+                                    .stroke(Color.blue.opacity(0.3), lineWidth: 1)
+                            )
+                    }
                 }
                 
                 // Selector de estado
@@ -637,6 +652,28 @@ struct FileDetail: View {
                 Text(formatDate(record.createdAt))
                     .font(.caption)
                     .foregroundColor(.secondary)
+            }
+            
+            // Información del archivo
+            HStack(spacing: 8) {
+                Image(systemName: "doc.fill")
+                    .foregroundColor(.blue)
+                    .font(.caption)
+                
+                Text(record.file.filename)
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                    .lineLimit(1)
+                
+                Spacer()
+                
+                Text(record.file.type.uppercased())
+                    .font(.caption2.bold())
+                    .foregroundColor(.blue)
+                    .padding(.horizontal, 6)
+                    .padding(.vertical, 2)
+                    .background(Color.blue.opacity(0.1))
+                    .cornerRadius(4)
             }
             
             if !record.notes.isEmpty {

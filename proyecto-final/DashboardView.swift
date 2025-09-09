@@ -256,6 +256,13 @@ struct DashboardView: View {
                 }
             }
         }
+        .onReceive(NotificationCenter.default.publisher(for: .fileDeleted)) { _ in
+            print("📢 Dashboard: Notificación de archivo borrado recibida")
+            print("🔄 Dashboard: Actualizando estadísticas...")
+            Task {
+                await fetchStats()
+            }
+        }
         .refreshable { await fetchStats() }
         // Sheet único para uploads
         .sheet(item: $activePicker) { picker in
@@ -326,8 +333,18 @@ struct DashboardView: View {
         }
 
         if let json = try? JSONSerialization.jsonObject(with: data) as? [[String: Any]] {
+            // Filtrar solo archivos activos
+            let activeFiles = json.filter { file in
+                if let isActive = file["is_active"] as? Bool {
+                    return isActive
+                }
+                return false
+            }
+            
+            print("📊 Dashboard: Total archivos: \(json.count), Archivos activos: \(activeFiles.count)")
+            
             await MainActor.run {
-                statsManager.totalFiles = json.count
+                statsManager.totalFiles = activeFiles.count
                 statsManager.updatePendingFiles()
             }
         }
@@ -488,7 +505,6 @@ struct DashboardView: View {
         let (data, response) = try await URLSession.shared.data(for: request)
         
         if let httpResponse = response as? HTTPURLResponse {
-            print("📤 Response status: \(httpResponse.statusCode)")
                         if !(200...299).contains(httpResponse.statusCode) {
                 let responseBody = String(data: data, encoding: .utf8) ?? "No response body"
                 print("❌ Error response: \(responseBody)")
