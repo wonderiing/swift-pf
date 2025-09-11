@@ -102,6 +102,9 @@ struct DashboardView: View {
     
     // Control para evitar uploads duplicados
     @State private var isProcessingUpload = false
+    
+    // Estado para navegación a AR
+    @State private var showingARView = false
 
     var body: some View {
         ScrollView {
@@ -213,6 +216,9 @@ struct DashboardView: View {
                             activePicker = .contract 
                         }
                     )
+                    
+                    // Botón de AR
+                    ARCard()
                 }
                 .padding(.horizontal)
 
@@ -275,6 +281,10 @@ struct DashboardView: View {
                     uploadFile(from: url, to: "http://127.0.0.1:3000/api/processing-pipeline-module/contract", type: .contract)
                 }
             }
+        }
+        // Sheet para vista AR
+        .sheet(isPresented: $showingARView) {
+            ARViewSwiftUI()
         }
     }
 
@@ -770,6 +780,87 @@ enum APIError: Error, LocalizedError {
             return "URL inválida"
         case .serverError(let code):
             return "Error del servidor: \(code)"
+        }
+    }
+}
+
+// MARK: - AR Card Component
+struct ARCard: View {
+    @State private var showingARView = false
+    
+    var body: some View {
+        VStack(spacing: 16) {
+            HStack(spacing: 16) {
+                ZStack {
+                    Circle()
+                        .fill(
+                            LinearGradient(
+                                gradient: Gradient(colors: [Color.orange.opacity(0.2), Color.orange.opacity(0.1)]),
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            )
+                        )
+                        .frame(width: 60, height: 60)
+                    
+                    Image(systemName: "arkit")
+                        .font(.title2)
+                        .foregroundColor(.orange)
+                }
+                
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Realidad Aumentada")
+                        .font(.headline)
+                        .foregroundColor(.primary)
+                    Text("Visualiza modelos 3D en tu entorno")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                        .multilineTextAlignment(.leading)
+                }
+                
+                Spacer()
+            }
+            
+            Button(action: {
+                showingARView = true
+            }) {
+                HStack {
+                    Image(systemName: "cube.box.fill")
+                    Text("Abrir AR")
+                }
+                .font(.subheadline.bold())
+                .foregroundColor(.white)
+                .padding(.vertical, 14)
+                .padding(.horizontal, 20)
+                .frame(maxWidth: .infinity)
+                .background(
+                    LinearGradient(
+                        gradient: Gradient(colors: [Color.orange, Color.orange.opacity(0.8)]),
+                        startPoint: .leading,
+                        endPoint: .trailing
+                    )
+                )
+                .cornerRadius(12)
+            }
+        }
+        .padding(20)
+        .background(
+            RoundedRectangle(cornerRadius: 20)
+                .fill(Color.white)
+                .shadow(color: Color.orange.opacity(0.15), radius: 10, x: 0, y: 5)
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 20)
+                .stroke(
+                    LinearGradient(
+                        gradient: Gradient(colors: [Color.orange.opacity(0.3), Color.orange.opacity(0.1)]),
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    ), 
+                    lineWidth: 1
+                )
+        )
+        .sheet(isPresented: $showingARView) {
+            ARViewSwiftUI()
         }
     }
 }
