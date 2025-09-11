@@ -185,7 +185,7 @@ struct FileFinder: View {
                 .padding(.bottom, 16)
                 .background(
                     LinearGradient(
-                        gradient: Gradient(colors: [Color.blue, Color.purple]),
+                        gradient: Gradient(colors: [Color.green, Color.green.opacity(0.7)]),
                         startPoint: .topLeading,
                         endPoint: .bottomTrailing
                     )
@@ -211,8 +211,8 @@ struct FileFinder: View {
                     LinearGradient(
                         gradient: Gradient(colors: [
                             Color.gray.opacity(0.05),
-                            Color.blue.opacity(0.02),
-                            Color.purple.opacity(0.02)
+                            Color.green.opacity(0.02),
+                            Color.green.opacity(0.01)
                         ]),
                         startPoint: .topLeading,
                         endPoint: .bottomTrailing

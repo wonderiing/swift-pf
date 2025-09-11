@@ -15,22 +15,20 @@ struct RegisterView: View {
         NavigationStack {
             ScrollView {
                 VStack(spacing: 0) {
-                    // Header con gradiente
                     VStack(spacing: 24) {
-                        // Logo y título
                         VStack(spacing: 16) {
                             ZStack {
                                 Circle()
                                     .fill(
                                         LinearGradient(
-                                            gradient: Gradient(colors: [Color.purple, Color.blue]),
+                                            gradient: Gradient(colors: [Color.green, Color.green.opacity(0.7)]),
                                             startPoint: .topLeading,
                                             endPoint: .bottomTrailing
                                         )
                                     )
                                     .frame(width: 80, height: 80)
                                 
-                                Image("doc2")
+                                Image("doc-logo-g")
                                     .resizable()
                                     .frame(width: 40, height: 40)
                                     .foregroundColor(.white)
@@ -63,19 +61,7 @@ struct RegisterView: View {
                                     .cornerRadius(12)
                                     .foregroundColor(.white)
                                     .accentColor(.white)
-                                    .overlay(
-                                        Group {
-                                            if fullName.isEmpty {
-                                                HStack {
-                                                    Text("Tu nombre completo")
-                                                        .foregroundColor(.white.opacity(0.6))
-                                                        .font(.system(size: 16))
-                                                    Spacer()
-                                                }
-                                                .padding(.horizontal, 16)
-                                            }
-                                        }
-                                    )
+                                    
                             }
                             
                             // Campo de email
@@ -94,19 +80,7 @@ struct RegisterView: View {
                                     .cornerRadius(12)
                                     .foregroundColor(.white)
                                     .accentColor(.white)
-                                    .overlay(
-                                        Group {
-                                            if email.isEmpty {
-                                                HStack {
-                                                    Text("tu@email.com")
-                                                        .foregroundColor(.white.opacity(0.6))
-                                                        .font(.system(size: 16))
-                                                    Spacer()
-                                                }
-                                                .padding(.horizontal, 16)
-                                            }
-                                        }
-                                    )
+                                    
                             }
                             
                             // Campo de contraseña
@@ -123,19 +97,7 @@ struct RegisterView: View {
                                     .cornerRadius(12)
                                     .foregroundColor(.white)
                                     .accentColor(.white)
-                                    .overlay(
-                                        Group {
-                                            if password.isEmpty {
-                                                HStack {
-                                                    Text("••••••••")
-                                                        .foregroundColor(.white.opacity(0.6))
-                                                        .font(.system(size: 16))
-                                                    Spacer()
-                                                }
-                                                .padding(.horizontal, 16)
-                                            }
-                                        }
-                                    )
+                                    
                             }
                             
                             // Recordarme
@@ -157,7 +119,7 @@ struct RegisterView: View {
                     .padding(.vertical, 40)
                     .background(
                         LinearGradient(
-                            gradient: Gradient(colors: [Color.purple, Color.blue]),
+                            gradient: Gradient(colors: [Color.green, Color.green.opacity(0.7)]),
                             startPoint: .topLeading,
                             endPoint: .bottomTrailing
                         )
@@ -190,7 +152,7 @@ struct RegisterView: View {
                             .frame(maxWidth: .infinity)
                             .background(
                                 LinearGradient(
-                                    gradient: Gradient(colors: [Color.purple, Color.blue]),
+                                    gradient: Gradient(colors: [Color.green, Color.green.opacity(0.7)]),
                                     startPoint: .leading,
                                     endPoint: .trailing
                                 )
@@ -243,7 +205,7 @@ struct RegisterView: View {
                                     .padding(.vertical, 12)
                                     .background(
                                         LinearGradient(
-                                            gradient: Gradient(colors: [Color.blue, Color.purple]),
+                                            gradient: Gradient(colors: [Color.green, Color.green.opacity(0.7)]),
                                             startPoint: .leading,
                                             endPoint: .trailing
                                         )
@@ -333,8 +295,8 @@ struct RegisterView: View {
                 LinearGradient(
                     gradient: Gradient(colors: [
                         Color.gray.opacity(0.05),
-                        Color.purple.opacity(0.02),
-                        Color.blue.opacity(0.02)
+                        Color.green.opacity(0.02),
+                        Color.green.opacity(0.01)
                     ]),
                     startPoint: .topLeading,
                     endPoint: .bottomTrailing

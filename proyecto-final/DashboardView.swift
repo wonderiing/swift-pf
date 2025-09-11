@@ -128,7 +128,7 @@ struct DashboardView: View {
                 .padding(.vertical, 20)
                 .background(
                     LinearGradient(
-                        gradient: Gradient(colors: [Color.blue, Color.purple]),
+                        gradient: Gradient(colors: [Color.green, Color.green.opacity(0.7)]),
                         startPoint: .topLeading,
                         endPoint: .bottomTrailing
                     )
@@ -168,10 +168,10 @@ struct DashboardView: View {
                         StatMiniCard(
                             title: "Pendientes", 
                             value: "\(statsManager.pendingFiles)", 
-                            color: .orange, 
+                            color: .yellow, 
                             icon: "clock.fill",
                             gradient: LinearGradient(
-                                gradient: Gradient(colors: [Color.orange, Color.orange.opacity(0.7)]),
+                                gradient: Gradient(colors: [Color.yellow, Color.yellow.opacity(0.7)]),
                                 startPoint: .topLeading,
                                 endPoint: .bottomTrailing
                             )
@@ -201,7 +201,7 @@ struct DashboardView: View {
                     UploadCard(
                         title: "Subir Contrato",
                         subtitle: "Envía documentos legales al sistema",
-                        color: .purple,
+                        color: .yellow,
                         icon: "doc.text.fill",
                         isUploading: $contractUploading,
                         progress: $contractProgress,
@@ -229,8 +229,8 @@ struct DashboardView: View {
             LinearGradient(
                 gradient: Gradient(colors: [
                     Color.gray.opacity(0.05),
-                    Color.blue.opacity(0.02),
-                    Color.purple.opacity(0.02)
+                    Color.green.opacity(0.02),
+                    Color.green.opacity(0.01)
                 ]),
                 startPoint: .topLeading,
                 endPoint: .bottomTrailing

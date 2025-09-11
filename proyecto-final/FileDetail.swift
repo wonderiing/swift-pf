@@ -92,7 +92,7 @@ struct FileDetail: View {
                         Circle()
                             .fill(
                                 LinearGradient(
-                                    gradient: Gradient(colors: [Color.blue, Color.purple]),
+                                    gradient: Gradient(colors: [Color.green, Color.green.opacity(0.7)]),
                                     startPoint: .topLeading,
                                     endPoint: .bottomTrailing
                                 )
@@ -150,7 +150,7 @@ struct FileDetail: View {
             .padding(.bottom, 16)
             .background(
                 LinearGradient(
-                    gradient: Gradient(colors: [Color.blue, Color.purple]),
+                    gradient: Gradient(colors: [Color.green, Color.green.opacity(0.7)]),
                     startPoint: .topLeading,
                     endPoint: .bottomTrailing
                 )
@@ -178,8 +178,8 @@ struct FileDetail: View {
             LinearGradient(
                 gradient: Gradient(colors: [
                     Color.gray.opacity(0.05),
-                    Color.blue.opacity(0.02),
-                    Color.purple.opacity(0.02)
+                    Color.green.opacity(0.02),
+                    Color.green.opacity(0.01)
                 ]),
                 startPoint: .topLeading,
                 endPoint: .bottomTrailing
@@ -257,7 +257,7 @@ struct FileDetail: View {
                                             .font(.system(.caption, design: .monospaced))
                                             .padding(8)
                                         .frame(maxWidth: .infinity, alignment: .leading)
-                                            .background(rowIndex == 0 ? Color.blue.opacity(0.1) : Color(.systemGray6))
+                                            .background(rowIndex == 0 ? Color.green.opacity(0.1) : Color(.systemGray6))
                                         .cornerRadius(6)
                                     }
                                 }
@@ -427,7 +427,7 @@ struct FileDetail: View {
                     .padding(20)
                     .background(
                         LinearGradient(
-                            gradient: Gradient(colors: [Color.blue, Color.purple]),
+                            gradient: Gradient(colors: [Color.green, Color.green.opacity(0.7)]),
                             startPoint: .leading,
                             endPoint: .trailing
                         )
@@ -491,7 +491,7 @@ struct FileDetail: View {
                             .cornerRadius(12)
                             .overlay(
                                 RoundedRectangle(cornerRadius: 12)
-                                    .stroke(Color.blue.opacity(0.3), lineWidth: 1)
+                                    .stroke(Color.green.opacity(0.3), lineWidth: 1)
                             )
                     }
                 }
@@ -560,7 +560,7 @@ struct FileDetail: View {
                     .frame(maxWidth: .infinity)
                     .background(
                         LinearGradient(
-                            gradient: Gradient(colors: [Color.blue, Color.purple]),
+                            gradient: Gradient(colors: [Color.green, Color.green.opacity(0.7)]),
                             startPoint: .leading,
                             endPoint: .trailing
                         )
@@ -672,7 +672,7 @@ struct FileDetail: View {
                     .foregroundColor(.blue)
                     .padding(.horizontal, 6)
                     .padding(.vertical, 2)
-                    .background(Color.blue.opacity(0.1))
+                    .background(Color.green.opacity(0.1))
                     .cornerRadius(4)
             }
             

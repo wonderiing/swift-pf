@@ -29,14 +29,14 @@ struct LoginView: View {
                                 Circle()
                                     .fill(
                                         LinearGradient(
-                                            gradient: Gradient(colors: [Color.blue, Color.purple]),
+                                            gradient: Gradient(colors: [Color.green, Color.green.opacity(0.7)]),
                                             startPoint: .topLeading,
                                             endPoint: .bottomTrailing
                                         )
                                     )
                                     .frame(width: 80, height: 80)
                                 
-                                Image("doc2")
+                                Image("doc-logo-g")
                                     .resizable()
                                     .frame(width: 40, height: 40)
                                     .foregroundColor(.white)
@@ -112,7 +112,7 @@ struct LoginView: View {
                     .padding(.vertical, 40)
                     .background(
                         LinearGradient(
-                            gradient: Gradient(colors: [Color.blue, Color.purple]),
+                            gradient: Gradient(colors: [Color.green, Color.green.opacity(0.7)]),
                             startPoint: .topLeading,
                             endPoint: .bottomTrailing
                         )
@@ -145,7 +145,7 @@ struct LoginView: View {
                             .frame(maxWidth: .infinity)
                             .background(
                                 LinearGradient(
-                                    gradient: Gradient(colors: [Color.blue, Color.purple]),
+                                    gradient: Gradient(colors: [Color.green, Color.green.opacity(0.7)]),
                                     startPoint: .leading,
                                     endPoint: .trailing
                                 )
@@ -249,8 +249,8 @@ struct LoginView: View {
                 LinearGradient(
                     gradient: Gradient(colors: [
                         Color.gray.opacity(0.05),
-                        Color.blue.opacity(0.02),
-                        Color.purple.opacity(0.02)
+                        Color.green.opacity(0.02),
+                        Color.green.opacity(0.01)
                     ]),
                     startPoint: .topLeading,
                     endPoint: .bottomTrailing

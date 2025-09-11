@@ -31,8 +31,8 @@ struct SalesForecastView: View {
             .background(
                 LinearGradient(
                     gradient: Gradient(colors: [
-                        Color.blue.opacity(0.05),
-                        Color.purple.opacity(0.05),
+                        Color.green.opacity(0.05),
+                        Color.green.opacity(0.03),
                         Color.orange.opacity(0.05)
                     ]),
                     startPoint: .topLeading,
@@ -99,7 +99,7 @@ struct SalesForecastView: View {
         .padding(20)
         .background(
             LinearGradient(
-                gradient: Gradient(colors: [Color.blue, Color.purple]),
+                gradient: Gradient(colors: [Color.green, Color.green.opacity(0.7)]),
                 startPoint: .topLeading,
                 endPoint: .bottomTrailing
             )
@@ -134,7 +134,7 @@ struct SalesForecastView: View {
                             }
                         }
                         .padding()
-                        .background(selectedDays == days ? Color.blue.opacity(0.1) : Color.clear)
+                        .background(selectedDays == days ? Color.green.opacity(0.1) : Color.clear)
                         .cornerRadius(10)
                     }
                     .foregroundColor(.primary)
@@ -206,7 +206,7 @@ struct SalesForecastView: View {
                 .multilineTextAlignment(.center)
         }
         .padding(40)
-        .background(Color.blue.opacity(0.1))
+        .background(Color.green.opacity(0.1))
         .cornerRadius(16)
     }
     
@@ -351,7 +351,7 @@ struct SalesForecastView: View {
                         VStack(spacing: 4) {
                             Rectangle()
                                 .fill(LinearGradient(
-                                    gradient: Gradient(colors: [Color.blue, Color.purple]),
+                                    gradient: Gradient(colors: [Color.green, Color.green.opacity(0.7)]),
                                     startPoint: .bottom,
                                     endPoint: .top
                                 ))
