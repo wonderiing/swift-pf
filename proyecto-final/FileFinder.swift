@@ -34,13 +34,29 @@ struct Archivo: Identifiable, Decodable {
 // MARK: - ViewModel
 class ArchivoViewModel: ObservableObject {
     @Published var archivos: [Archivo] = []
+    @Published var isLoading = false
+    @Published var hasMoreFiles = true
+    @Published var currentPage = 1
+    private let pageSize = 10
     
-    func fetchArchivos() {
-        print("🔄 FileFinder: Iniciando fetchArchivos...")
-        guard let url = URL(string: "http://localhost:3000/api/files/user") else { 
+    func fetchArchivos(reset: Bool = false) {
+        if reset {
+            currentPage = 1
+            archivos = []
+            hasMoreFiles = true
+        }
+        
+        guard !isLoading && hasMoreFiles else { return }
+        
+        isLoading = true
+        print("🔄 FileFinder: Iniciando fetchArchivos página \(currentPage)...")
+        
+        guard let url = URL(string: "http://localhost:3000/api/files/user?limit=\(pageSize)&page=\(currentPage)") else { 
             print("❌ FileFinder: URL inválida")
+            isLoading = false
             return 
         }
+        print("🔍 FileFinder: URL de consulta: \(url)")
         var request = URLRequest(url: url)
         request.httpMethod = "GET"
         if let token = TokenManager.shared.currentToken {
@@ -48,6 +64,7 @@ class ArchivoViewModel: ObservableObject {
             print("🔑 FileFinder: Token encontrado: \(token.prefix(10))...")
         } else {
             print("⚠️ FileFinder: No se encontró token en Keychain")
+            isLoading = false
             return
         }
         
@@ -74,20 +91,28 @@ class ArchivoViewModel: ObservableObject {
             
             do {
                 let decoded = try JSONDecoder().decode([Archivo].self, from: data)
-                print("✅ FileFinder: Decodificación exitosa. Archivos encontrados: \(decoded.count)")
+                print("✅ FileFinder: Decodificación exitosa. Archivos encontrados en página \(self.currentPage): \(decoded.count)")
                 
                 // Filtrar solo archivos activos
                 let activeFiles = decoded.filter { $0.isActive }
-                print("✅ FileFinder: Archivos activos: \(activeFiles.count) de \(decoded.count)")
-                
-                for (index, archivo) in decoded.enumerated() {
-                    let status = archivo.isActive ? "ACTIVO" : "INACTIVO"
-                    print("📁 FileFinder: Archivo \(index + 1): \(archivo.nombre) (ID: \(archivo.id), Status: \(status))")
-                }
+                print("✅ FileFinder: Archivos activos en página \(self.currentPage): \(activeFiles.count) de \(decoded.count)")
                 
                 DispatchQueue.main.async { 
-                    self.archivos = activeFiles 
-                    print("🔄 FileFinder: Lista actualizada en UI con \(self.archivos.count) archivos activos")
+                    if self.currentPage == 1 {
+                        // Primera página: reemplazar lista
+                        self.archivos = activeFiles
+                    } else {
+                        // Páginas siguientes: agregar a la lista
+                        self.archivos.append(contentsOf: activeFiles)
+                    }
+                    
+                    // Verificar si hay más páginas
+                    self.hasMoreFiles = decoded.count == self.pageSize
+                    self.currentPage += 1
+                    self.isLoading = false
+                    
+                    print("🔄 FileFinder: Lista actualizada en UI con \(self.archivos.count) archivos activos totales")
+                    print("🔄 FileFinder: ¿Hay más archivos?: \(self.hasMoreFiles)")
                 }
             } catch {
                 print("❌ FileFinder: Error al decodificar archivos:", error)
@@ -96,6 +121,10 @@ class ArchivoViewModel: ObservableObject {
                 }
             }
         }.resume()
+    }
+    
+    func loadMoreFiles() {
+        fetchArchivos()
     }
 }
 
@@ -117,20 +146,20 @@ struct FileFinder: View {
     var body: some View {
         NavigationView {
             VStack(spacing: 0) {
-                // Header con gradiente - Más compacto
+                // Header con gradiente - Más grande
                 VStack(spacing: 12) {
                     HStack {
-                        VStack(alignment: .leading, spacing: 4) {
+                        VStack(alignment: .leading, spacing: 6) {
                             Text("📂 Archivos")
-                                .font(.title.bold())
+                                .font(.largeTitle.bold())
                                 .foregroundColor(.white)
                             Text("Gestiona tus archivos y documentos")
-                                .font(.caption)
+                                .font(.subheadline)
                                 .foregroundColor(.white.opacity(0.9))
                         }
                         Spacer()
                         Image(systemName: "folder.fill")
-                            .font(.title2)
+                            .font(.title)
                             .foregroundColor(.white.opacity(0.8))
                     }
                     
@@ -181,7 +210,7 @@ struct FileFinder: View {
                     }
                 }
                 .padding(.horizontal, 16)
-                .padding(.top, 12)
+                .padding(.top, 8)
                 .padding(.bottom, 16)
                 .background(
                     LinearGradient(
@@ -196,16 +225,47 @@ struct FileFinder: View {
                 // Lista de Archivos
                 ScrollView {
                     LazyVStack(spacing: 12) {
-                        if filteredArchivos.isEmpty {
+                        if filteredArchivos.isEmpty && !viewModel.isLoading {
                             emptyStateView
                         } else {
                             ForEach(filteredArchivos) { archivo in
                                 ArchivoCard(archivo: archivo, viewModel: viewModel)
+                                    .onAppear {
+                                        // Cargar más archivos cuando se acerca al final
+                                        if archivo.id == filteredArchivos.last?.id && viewModel.hasMoreFiles && !viewModel.isLoading {
+                                            print("🔄 FileFinder: Cargando más archivos...")
+                                            viewModel.loadMoreFiles()
+                                        }
+                                    }
+                            }
+                            
+                            // Indicador de carga al final
+                            if viewModel.isLoading {
+                                HStack {
+                                    ProgressView()
+                                        .scaleEffect(0.8)
+                                    Text("Cargando más archivos...")
+                                        .font(.caption)
+                                        .foregroundColor(.secondary)
+                                }
+                                .padding(.vertical, 16)
+                            }
+                            
+                            // Mensaje cuando no hay más archivos
+                            if !viewModel.hasMoreFiles && !filteredArchivos.isEmpty {
+                                HStack {
+                                    Image(systemName: "checkmark.circle.fill")
+                                        .foregroundColor(.green)
+                                    Text("Todos los archivos cargados")
+                                        .font(.caption)
+                                        .foregroundColor(.secondary)
+                                }
+                                .padding(.vertical, 16)
                             }
                         }
                     }
                     .padding(.horizontal, 16)
-                    .padding(.top, 16)
+                    .padding(.top, 4)
                 }
                 .background(
                     LinearGradient(
@@ -221,7 +281,19 @@ struct FileFinder: View {
             }
             .onAppear { 
                 print("🔄 FileFinder: Vista apareció. Archivos actuales: \(viewModel.archivos.count)")
-                viewModel.fetchArchivos() 
+                viewModel.fetchArchivos(reset: true) 
+            }
+            .onReceive(NotificationCenter.default.publisher(for: .fileUploaded)) { _ in
+                print("📢 FileFinder: Notificación de archivo subido recibida")
+                viewModel.fetchArchivos(reset: true)
+            }
+            .onReceive(NotificationCenter.default.publisher(for: .fileDeleted)) { _ in
+                print("📢 FileFinder: Notificación de archivo borrado recibida")
+                viewModel.fetchArchivos(reset: true)
+            }
+            .refreshable {
+                print("🔄 FileFinder: Pull to refresh activado")
+                viewModel.fetchArchivos(reset: true)
             }
             .navigationBarHidden(true)
         }

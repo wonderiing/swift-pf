@@ -368,7 +368,7 @@ struct FileDetail: View {
                 
                 // Contenido del análisis
                 VStack(alignment: .leading, spacing: 16) {
-                    Text(detalleValue.aiResponse)
+                    MarkdownText(text: detalleValue.aiResponse)
                         .font(.system(size: 16))
                         .multilineTextAlignment(.leading)
                         .lineSpacing(6)
@@ -725,6 +725,42 @@ struct PDFQuickLookView: UIViewControllerRepresentable {
         func previewController(_ controller: QLPreviewController, previewItemAt index: Int) -> QLPreviewItem {
             parent.url as QLPreviewItem
         }
+    }
+}
+
+// MARK: - MarkdownText View
+struct MarkdownText: View {
+    let text: String
+    
+    var body: some View {
+        Text(parseMarkdown(text))
+            .font(.system(size: 16))
+            .multilineTextAlignment(.leading)
+    }
+    
+    private func parseMarkdown(_ markdown: String) -> String {
+        var result = markdown
+        
+
+        result = result.replacingOccurrences(of: #"\*\*(.*?)\*\*"#, with: "$1", options: .regularExpression)
+        result = result.replacingOccurrences(of: #"__(.*?)__"#, with: "$1", options: .regularExpression)
+        
+        result = result.replacingOccurrences(of: #"(?<!\*)\*([^*]+)\*(?!\*)"#, with: "$1", options: .regularExpression)
+        result = result.replacingOccurrences(of: #"(?<!_)_([^_]+)_(?!_)"#, with: "$1", options: .regularExpression)
+        
+        if let regex = try? NSRegularExpression(pattern: #"```(.*?)```"#, options: .dotMatchesLineSeparators) {
+            let range = NSRange(location: 0, length: result.utf16.count)
+            result = regex.stringByReplacingMatches(in: result, options: [], range: range, withTemplate: "$1")
+        }
+        
+        result = result.replacingOccurrences(of: #"`([^`]+)`"#, with: "$1", options: .regularExpression)
+        
+        if let regex = try? NSRegularExpression(pattern: #"^#{1,6}\s+"#, options: .anchorsMatchLines) {
+            let range = NSRange(location: 0, length: result.utf16.count)
+            result = regex.stringByReplacingMatches(in: result, options: [], range: range, withTemplate: "")
+        }
+        
+        return result
     }
 }
 

@@ -29,17 +29,17 @@ struct LoginView: View {
                                 Circle()
                                     .fill(
                                         LinearGradient(
-                                            gradient: Gradient(colors: [Color.green, Color.green.opacity(0.7)]),
+                                            gradient: Gradient(colors: [Color.white, Color.white.opacity(0.8)]),
                                             startPoint: .topLeading,
                                             endPoint: .bottomTrailing
                                         )
                                     )
                                     .frame(width: 80, height: 80)
+                                    .shadow(color: .black.opacity(0.1), radius: 8, x: 0, y: 4)
                                 
-                                Image("doc-logo-g")
-                                    .resizable()
-                                    .frame(width: 40, height: 40)
-                                    .foregroundColor(.white)
+                                Image(systemName: "doc.text.magnifyingglass")
+                                    .font(.system(size: 36, weight: .medium))
+                                    .foregroundColor(.green)
                             }
                             
                             VStack(spacing: 8) {
@@ -60,15 +60,21 @@ struct LoginView: View {
                                     .font(.subheadline.bold())
                                     .foregroundColor(.white.opacity(0.9))
                                 
-                                TextField("", text: $email, prompt: Text("tu@email.com").foregroundColor(.white.opacity(0.7)))
-                                    .autocapitalization(.none)
-                                    .keyboardType(.emailAddress)
-                                    .padding(.horizontal, 16)
-                                    .padding(.vertical, 14)
-                                    .background(Color.white.opacity(0.2))
-                                    .cornerRadius(12)
-                                    .foregroundColor(.white)
-                                    .accentColor(.white)
+                                ZStack(alignment: .leading) {
+                                    if email.isEmpty {
+                                        Text("tu@email.com")
+                                            .foregroundColor(.white.opacity(0.7))
+                                            .padding(.horizontal, 16)
+                                    }
+                                    TextField("", text: $email)
+                                        .autocapitalization(.none)
+                                        .keyboardType(.emailAddress)
+                                        .foregroundColor(.white)
+                                }
+                                .padding(.horizontal, 16)
+                                .padding(.vertical, 14)
+                                .background(Color.white.opacity(0.2))
+                                .cornerRadius(12)
                             }
                             
                             // Campo de contraseña
@@ -236,7 +242,7 @@ struct LoginView: View {
                             NavigationLink(destination: RegisterView()) {
                                 Text("Regístrate aquí")
                                     .font(.subheadline.bold())
-                                    .foregroundColor(.blue)
+                                    .foregroundColor(.yellow)
                             }
                         }
                         .padding(.top, 20)

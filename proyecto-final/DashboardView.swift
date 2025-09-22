@@ -21,13 +21,6 @@ struct ContentView: View {
                         Text("FileFinder")
                     }
             }
-            .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("Logout") {
-                        session.logout()
-                    }
-                }
-            }
         }
     }
 }
@@ -42,6 +35,7 @@ enum PickerType {
 extension Notification.Name {
     static let didLogin = Notification.Name("didLogin")
     static let didLogout = Notification.Name("didLogout")
+    static let fileUploaded = Notification.Name("fileUploaded")
 }
 
 // MARK: - Dashboard Stats Manager
@@ -118,6 +112,7 @@ struct DashboardView: View {
                                 .foregroundColor(.white)
                         }
                         Spacer()
+                        
                         Image(systemName: "chart.bar.fill")
                             .font(.title)
                             .foregroundColor(.white.opacity(0.8))
@@ -237,7 +232,6 @@ struct DashboardView: View {
             )
         )
         .onAppear {
-            print("🔄 DashboardView onAppear - Token: \(session.token?.prefix(10) ?? "nil"), UserId: \(session.userId ?? "nil")")
             // Siempre resetear estado cuando aparece la vista
             statsManager.reset()
             resetDashboardState()
@@ -249,16 +243,13 @@ struct DashboardView: View {
                 
                 // Verificar token nuevamente después del delay
                 if session.token != nil {
-                    print("🔄 Token confirmed after delay, fetching stats...")
                     await fetchStats()
                 } else {
-                    print("❌ No token available after delay")
                 }
             }
         }
         .onReceive(NotificationCenter.default.publisher(for: .fileDeleted)) { _ in
-            print("📢 Dashboard: Notificación de archivo borrado recibida")
-            print("🔄 Dashboard: Actualizando estadísticas...")
+
             Task {
                 await fetchStats()
             }
@@ -267,7 +258,6 @@ struct DashboardView: View {
         // Sheet único para uploads
         .sheet(item: $activePicker) { picker in
             DocumentPicker { url in
-                print("📁 DocumentPicker callback triggered for: \(url.lastPathComponent)")
                 switch picker {
                 case .document:
                     uploadFile(from: url, to: "http://127.0.0.1:3000/api/processing-pipeline-module/data", type: .document)
@@ -280,11 +270,8 @@ struct DashboardView: View {
 
     // MARK: - Funciones de datos
     func fetchStats() async {
-        print("🔄 fetchStats called - Token: \(session.token?.prefix(10) ?? "nil")")
         
-        // Verificar token justo antes de usarlo, no capturarlo en variable local
         guard let currentToken = session.token else {
-            print("❌ No token available, resetting state")
             await MainActor.run {
                 statsManager.isLoading = false
                 resetDashboardState()
@@ -292,7 +279,6 @@ struct DashboardView: View {
             return
         }
 
-        print("🔄 Starting to fetch stats with token: \(currentToken.prefix(10))...")
         
         await MainActor.run {
             statsManager.isLoading = true
@@ -319,8 +305,9 @@ struct DashboardView: View {
     }
 
     func fetchFiles(token: String) async throws {
-        print("📁 fetchFiles called with token: \(token.prefix(20))...")
-        guard let url = URL(string: "http://127.0.0.1:3000/api/files/user?limit=10") else { return }
+        print("📁 Dashboard fetchFiles called with token: \(token.prefix(20))...")
+        guard let url = URL(string: "http://localhost:3000/api/files/user?limit=50") else { return }
+        print("🔍 Dashboard: URL de consulta: \(url)")
         var request = URLRequest(url: url)
         request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
         print("📁 Request header: Bearer \(token.prefix(20))...")
@@ -333,6 +320,19 @@ struct DashboardView: View {
         }
 
         if let json = try? JSONSerialization.jsonObject(with: data) as? [[String: Any]] {
+            print("📊 Dashboard: Total archivos recibidos: \(json.count)")
+            
+            // Mostrar todos los archivos antes del filtrado
+            print("📋 Dashboard: Lista completa de archivos:")
+            for (index, file) in json.enumerated() {
+                let isActive = file["is_active"] as? Bool ?? false
+                let filename = file["filename"] as? String ?? "Sin nombre"
+                let fileId = file["id"] as? Int ?? 0
+                let fileType = file["type"] as? String ?? "Sin tipo"
+                let status = isActive ? "ACTIVO" : "INACTIVO"
+                print("📁 Dashboard: Archivo \(index + 1): \(filename) (ID: \(fileId), Status: \(status), Tipo: \(fileType))")
+            }
+            
             // Filtrar solo archivos activos
             let activeFiles = json.filter { file in
                 if let isActive = file["is_active"] as? Bool {
@@ -341,7 +341,16 @@ struct DashboardView: View {
                 return false
             }
             
-            print("📊 Dashboard: Total archivos: \(json.count), Archivos activos: \(activeFiles.count)")
+            print("📊 Dashboard: Archivos activos: \(activeFiles.count) de \(json.count)")
+            
+            // Mostrar archivos activos después del filtrado
+            print("📋 Dashboard: Lista de archivos activos:")
+            for (index, file) in activeFiles.enumerated() {
+                let filename = file["filename"] as? String ?? "Sin nombre"
+                let fileId = file["id"] as? Int ?? 0
+                let fileType = file["type"] as? String ?? "Sin tipo"
+                print("📁 Dashboard: Activo \(index + 1): \(filename) (ID: \(fileId), Tipo: \(fileType))")
+            }
             
             await MainActor.run {
                 statsManager.totalFiles = activeFiles.count
@@ -351,7 +360,7 @@ struct DashboardView: View {
     }
 
     func fetchAudits(token: String) async throws {
-        guard let url = URL(string: "http://127.0.0.1:3000/api/audit-record/user?limit=5") else { return }
+        guard let url = URL(string: "http://localhost:3000/api/audit-record/user?limit=5") else { return }
         var request = URLRequest(url: url)
         request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
 
@@ -461,6 +470,9 @@ struct DashboardView: View {
                 }
 
                 await fetchStats()
+                
+                // Notificar que se subió un archivo
+                NotificationCenter.default.post(name: .fileUploaded, object: nil)
             } catch {
                 await MainActor.run {
                     switch type {
@@ -468,6 +480,10 @@ struct DashboardView: View {
                         documentUploading = false
                     case .contract:
                         contractUploading = false
+                        
+                        
+                        
+                        
                     }
                     statsManager.errorMessage = "Error subiendo archivo: \(error.localizedDescription)"
                 }
