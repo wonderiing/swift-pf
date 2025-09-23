@@ -216,6 +216,32 @@ struct DashboardView: View {
                     MessageView(text: errorMessage, color: .red, icon: "exclamationmark.triangle.fill")
                 }
 
+                // BOTÓN DE LOGOUT
+                Button(action: {
+                    session.logout()
+                }) {
+                    HStack(spacing: 12) {
+                        Image(systemName: "rectangle.portrait.and.arrow.right")
+                            .font(.system(size: 18, weight: .medium))
+                        Text("Cerrar Sesión")
+                            .font(.headline.bold())
+                    }
+                    .foregroundColor(.white)
+                    .padding(.horizontal, 24)
+                    .padding(.vertical, 16)
+                    .frame(maxWidth: .infinity)
+                    .background(
+                        LinearGradient(
+                            gradient: Gradient(colors: [Color.red, Color.red.opacity(0.8)]),
+                            startPoint: .leading,
+                            endPoint: .trailing
+                        )
+                    )
+                    .cornerRadius(16)
+                    .shadow(color: .red.opacity(0.3), radius: 8, x: 0, y: 4)
+                }
+                .padding(.horizontal)
+
                 Spacer()
             }
             .padding(.top)

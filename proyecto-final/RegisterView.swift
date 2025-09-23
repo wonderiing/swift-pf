@@ -72,7 +72,7 @@ struct RegisterView: View {
                                 
                                 ZStack(alignment: .leading) {
                                     if email.isEmpty {
-                                        Text("tu@email.com")
+                                        Text("")
                                             .foregroundColor(.white.opacity(0.7))
                                             .padding(.horizontal, 16)
                                     }

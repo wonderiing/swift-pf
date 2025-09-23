@@ -11,7 +11,7 @@ struct SalesForecastView: View {
     
     var body: some View {
         NavigationView {
-            ScrollView {
+            ScrollView(.vertical, showsIndicators: false) {
                 VStack(spacing: 24) {
                     // Header con gradiente
                     headerView
@@ -26,7 +26,8 @@ struct SalesForecastView: View {
                         emptyStateView
                     }
                 }
-                .padding()
+                .padding(.horizontal, 20)
+                .padding(.bottom, 40)
             }
             .background(
                 LinearGradient(
@@ -54,49 +55,57 @@ struct SalesForecastView: View {
     
     // MARK: - Header View
     private var headerView: some View {
-        VStack(spacing: 16) {
+        VStack(spacing: 20) {
+            // Título principal
             HStack {
                 VStack(alignment: .leading, spacing: 8) {
                     Text("🔮 Predicción de Ventas")
-                        .font(.title2.bold())
+                        .font(.title.bold())
                         .foregroundColor(.white)
+                        .lineLimit(2)
+                        .multilineTextAlignment(.leading)
                     
                     Text("Análisis predictivo basado en datos históricos")
                         .font(.subheadline)
                         .foregroundColor(.white.opacity(0.9))
+                        .lineLimit(2)
+                        .multilineTextAlignment(.leading)
                 }
                 
                 Spacer()
                 
                 Image(systemName: "chart.line.uptrend.xyaxis")
-                    .font(.title)
+                    .font(.title2)
                     .foregroundColor(.white.opacity(0.8))
             }
             
-            // Selector de días
+            // Selector de días mejorado
             HStack {
-                Text("Días a predecir:")
-                    .font(.subheadline)
-                    .foregroundColor(.white.opacity(0.9))
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Días a predecir:")
+                        .font(.subheadline.bold())
+                        .foregroundColor(.white.opacity(0.9))
+                    
+                    Button(action: { showingDaysPicker = true }) {
+                        HStack(spacing: 8) {
+                            Text("\(selectedDays) días")
+                                .font(.subheadline.bold())
+                            Image(systemName: "chevron.down")
+                                .font(.caption)
+                        }
+                        .foregroundColor(.white)
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 10)
+                        .background(Color.white.opacity(0.25))
+                        .cornerRadius(20)
+                    }
+                }
                 
                 Spacer()
-                
-                Button(action: { showingDaysPicker = true }) {
-                    HStack(spacing: 8) {
-                        Text("\(selectedDays) días")
-                            .font(.subheadline.bold())
-                        Image(systemName: "chevron.down")
-                            .font(.caption)
-                    }
-                    .foregroundColor(.white)
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 8)
-                    .background(Color.white.opacity(0.2))
-                    .cornerRadius(20)
-                }
             }
         }
-        .padding(20)
+        .padding(.horizontal, 24)
+        .padding(.vertical, 24)
         .background(
             LinearGradient(
                 gradient: Gradient(colors: [Color.green, Color.green.opacity(0.7)]),
@@ -229,57 +238,74 @@ struct SalesForecastView: View {
     
     // MARK: - Summary Card
     private func summaryCard(_ summary: ForecastSummary) -> some View {
-        VStack(spacing: 16) {
+        VStack(spacing: 20) {
             HStack {
                 Text("📊 Resumen")
                     .font(.title2.bold())
+                    .foregroundColor(.primary)
                 Spacer()
             }
             
-            VStack(spacing: 12) {
+            VStack(spacing: 16) {
+                // Período y tendencia
                 HStack {
-                    VStack(alignment: .leading, spacing: 4) {
+                    VStack(alignment: .leading, spacing: 6) {
                         Text("Período")
-                            .font(.caption)
+                            .font(.caption.bold())
                             .foregroundColor(.secondary)
                         Text(summary.period)
                             .font(.subheadline.bold())
+                            .foregroundColor(.primary)
+                            .lineLimit(2)
+                            .multilineTextAlignment(.leading)
                     }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    
                     Spacer()
-                    VStack(alignment: .trailing, spacing: 4) {
-                        Text("Tendencia")
-                            .font(.caption)
+                    
+                    VStack(alignment: .trailing, spacing: 6) {
+                        Text("Tendencia de ventas")
+                            .font(.caption.bold())
                             .foregroundColor(.secondary)
                         Text(summary.trend)
                             .font(.subheadline.bold())
                             .foregroundColor(.green)
+                            .lineLimit(2)
+                            .multilineTextAlignment(.trailing)
                     }
+                    .frame(maxWidth: .infinity, alignment: .trailing)
                 }
                 
                 Divider()
                 
-                HStack {
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text("Ventas Promedio Diarias")
-                            .font(.caption)
+                // Métricas principales
+                HStack(spacing: 16) {
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text("Promedio Diarias")
+                            .font(.caption.bold())
                             .foregroundColor(.secondary)
-                        Text("$\(Int(summary.avg_daily_sales).formatted())")
-                            .font(.title3.bold())
+                        Text("\(Int(summary.avg_daily_sales).formatted())")
+                            .font(.title2.bold())
                             .foregroundColor(.blue)
                     }
-                    Spacer()
-                    VStack(alignment: .trailing, spacing: 4) {
-                        Text("Total Predicho")
-                            .font(.caption)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    
+                    VStack(alignment: .trailing, spacing: 6) {
+                        Text("Total")
+                            .font(.caption.bold())
                             .foregroundColor(.secondary)
                         Text("$\(Int(summary.total_predicted_sales).formatted())")
-                            .font(.title3.bold())
+                            .font(.title2.bold())
                             .foregroundColor(.purple)
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.8)
                     }
+                    .frame(maxWidth: .infinity, alignment: .trailing)
                 }
             }
         }
-        .padding(20)
+        .padding(.horizontal, 24)
+        .padding(.vertical, 20)
         .background(Color.white)
         .cornerRadius(16)
         .shadow(color: .black.opacity(0.05), radius: 8, x: 0, y: 4)
@@ -287,16 +313,17 @@ struct SalesForecastView: View {
     
     // MARK: - Key Metrics Grid
     private func keyMetricsGrid(_ metrics: [KeyMetric]) -> some View {
-        VStack(spacing: 16) {
+        VStack(spacing: 20) {
             HStack {
                 Text("📈 Métricas Clave")
                     .font(.title2.bold())
+                    .foregroundColor(.primary)
                 Spacer()
             }
             
             LazyVGrid(columns: [
-                GridItem(.flexible()),
-                GridItem(.flexible())
+                GridItem(.flexible(), spacing: 12),
+                GridItem(.flexible(), spacing: 12)
             ], spacing: 16) {
                 ForEach(metrics, id: \.name) { metric in
                     metricCard(metric)
@@ -307,86 +334,116 @@ struct SalesForecastView: View {
     
     // MARK: - Metric Card
     private func metricCard(_ metric: KeyMetric) -> some View {
-        VStack(spacing: 8) {
-            HStack {
+        VStack(spacing: 12) {
+            // Título de la métrica
+            VStack(alignment: .leading, spacing: 4) {
                 Text(metric.name)
                     .font(.caption.bold())
                     .foregroundColor(.secondary)
-                Spacer()
+                    .lineLimit(2)
+                    .multilineTextAlignment(.leading)
             }
+            .frame(maxWidth: .infinity, alignment: .leading)
             
+            // Valor y unidad
             HStack(alignment: .bottom, spacing: 4) {
                 Text("\(Int(metric.value))")
                     .font(.title2.bold())
                     .foregroundColor(.primary)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.7)
+                
                 Text(metric.unit)
                     .font(.caption)
                     .foregroundColor(.secondary)
+                    .lineLimit(1)
             }
+            .frame(maxWidth: .infinity, alignment: .leading)
             
+            // Descripción
             Text(metric.description)
                 .font(.caption2)
                 .foregroundColor(.secondary)
                 .multilineTextAlignment(.leading)
+                .lineLimit(3)
                 .frame(maxWidth: .infinity, alignment: .leading)
         }
-        .padding(16)
+        .padding(.horizontal, 16)
+        .padding(.vertical, 16)
         .background(Color(.systemGray6))
         .cornerRadius(12)
     }
     
     // MARK: - Predictions Chart
     private func predictionsChart(_ predictions: [Prediction]) -> some View {
-        VStack(spacing: 16) {
+        VStack(spacing: 20) {
             HStack {
                 Text("📊 Gráfico de Predicciones")
                     .font(.title2.bold())
+                    .foregroundColor(.primary)
                 Spacer()
             }
             
-            // Gráfico simple con barras
-            VStack(spacing: 8) {
-                HStack(alignment: .bottom, spacing: 4) {
-                    ForEach(predictions, id: \.date) { prediction in
-                        VStack(spacing: 4) {
-                            Rectangle()
-                                .fill(LinearGradient(
-                                    gradient: Gradient(colors: [Color.green, Color.green.opacity(0.7)]),
-                                    startPoint: .bottom,
-                                    endPoint: .top
-                                ))
-                                .frame(width: 30, height: max(20, CGFloat(prediction.predicted_sales / 1000)))
-                                .cornerRadius(4)
-                            
-                            Text(prediction.day_of_week.prefix(3))
-                                .font(.caption2)
-                                .foregroundColor(.secondary)
+            // Gráfico mejorado con barras
+            VStack(spacing: 12) {
+                Text("Ventas Predichas por Día")
+                    .font(.caption.bold())
+                    .foregroundColor(.secondary)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(alignment: .bottom, spacing: 8) {
+                        ForEach(predictions, id: \.date) { prediction in
+                            VStack(spacing: 6) {
+                                // Barra del gráfico
+                                Rectangle()
+                                    .fill(LinearGradient(
+                                        gradient: Gradient(colors: [Color.green, Color.green.opacity(0.7)]),
+                                        startPoint: .bottom,
+                                        endPoint: .top
+                                    ))
+                                    .frame(width: 28, height: max(20, min(120, CGFloat(prediction.predicted_sales / 100))))
+                                    .cornerRadius(4)
+                                
+                                // Valor numérico
+                                Text("\(Int(prediction.predicted_sales))")
+                                    .font(.caption2.bold())
+                                    .foregroundColor(.primary)
+                                    .lineLimit(1)
+                                    .minimumScaleFactor(0.7)
+                                
+                                // Día de la semana
+                                Text(prediction.day_of_week.prefix(3))
+                                    .font(.caption2)
+                                    .foregroundColor(.secondary)
+                                    .lineLimit(1)
+                            }
+                            .frame(width: 40)
                         }
                     }
+                    .padding(.horizontal, 16)
                 }
-                .frame(height: 120)
-                .padding()
-                
-                Text("Ventas Predichas por Día")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
+                .frame(height: 140)
             }
-            .padding(16)
+            .padding(.horizontal, 20)
+            .padding(.vertical, 16)
             .background(Color.white)
             .cornerRadius(12)
+            .shadow(color: .black.opacity(0.05), radius: 4, x: 0, y: 2)
         }
     }
     
     // MARK: - Predictions List
     private func predictionsList(_ predictions: [Prediction]) -> some View {
-        VStack(spacing: 16) {
+        VStack(spacing: 20) {
             HStack {
                 Text("📅 Predicciones Detalladas")
                     .font(.title2.bold())
+                    .foregroundColor(.primary)
                 Spacer()
             }
             
-            LazyVStack(spacing: 8) {
+            LazyVStack(spacing: 12) {
                 ForEach(predictions, id: \.date) { prediction in
                     predictionRow(prediction)
                 }
@@ -396,27 +453,38 @@ struct SalesForecastView: View {
     
     // MARK: - Prediction Row
     private func predictionRow(_ prediction: Prediction) -> some View {
-        HStack {
-            VStack(alignment: .leading, spacing: 4) {
+        HStack(spacing: 16) {
+            // Información del día
+            VStack(alignment: .leading, spacing: 6) {
                 Text(prediction.day_of_week)
                     .font(.subheadline.bold())
+                    .foregroundColor(.primary)
+                    .lineLimit(1)
+                
                 Text(formatDate(prediction.date))
                     .font(.caption)
                     .foregroundColor(.secondary)
+                    .lineLimit(1)
             }
+            .frame(maxWidth: .infinity, alignment: .leading)
             
-            Spacer()
-            
-            VStack(alignment: .trailing, spacing: 4) {
+            // Valor de ventas
+            VStack(alignment: .trailing, spacing: 6) {
                 Text("$\(Int(prediction.predicted_sales).formatted())")
                     .font(.subheadline.bold())
                     .foregroundColor(.blue)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.8)
+                
                 Text("ventas")
                     .font(.caption2)
                     .foregroundColor(.secondary)
+                    .lineLimit(1)
             }
+            .frame(maxWidth: .infinity, alignment: .trailing)
         }
-        .padding(16)
+        .padding(.horizontal, 20)
+        .padding(.vertical, 16)
         .background(Color.white)
         .cornerRadius(12)
         .shadow(color: .black.opacity(0.05), radius: 4, x: 0, y: 2)

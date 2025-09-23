@@ -36,12 +36,12 @@ class ArchivoViewModel: ObservableObject {
     @Published var archivos: [Archivo] = []
     @Published var isLoading = false
     @Published var hasMoreFiles = true
-    @Published var currentPage = 1
+    @Published var currentOffset = 0
     private let pageSize = 10
     
     func fetchArchivos(reset: Bool = false) {
         if reset {
-            currentPage = 1
+            currentOffset = 0
             archivos = []
             hasMoreFiles = true
         }
@@ -49,9 +49,15 @@ class ArchivoViewModel: ObservableObject {
         guard !isLoading && hasMoreFiles else { return }
         
         isLoading = true
-        print("🔄 FileFinder: Iniciando fetchArchivos página \(currentPage)...")
+        print("🔄 FileFinder: Iniciando fetchArchivos offset \(currentOffset)...")
         
-        guard let url = URL(string: "http://localhost:3000/api/files/user?limit=\(pageSize)&page=\(currentPage)") else { 
+        // Construir URL con parámetros condicionales
+        var urlString = "http://localhost:3000/api/files/user?limit=\(pageSize)"
+        if currentOffset > 0 {
+            urlString += "&offset=\(currentOffset)"
+        }
+        
+        guard let url = URL(string: urlString) else { 
             print("❌ FileFinder: URL inválida")
             isLoading = false
             return 
@@ -70,6 +76,10 @@ class ArchivoViewModel: ObservableObject {
         
         print("📡 FileFinder: Enviando request a: \(url)")
         URLSession.shared.dataTask(with: request) { data, response, error in
+            DispatchQueue.main.async {
+                self.isLoading = false
+            }
+            
             if let error = error {
                 print("❌ FileFinder: Error en fetchArchivos:", error)
                 return
@@ -77,6 +87,14 @@ class ArchivoViewModel: ObservableObject {
             
             if let httpResponse = response as? HTTPURLResponse {
                 print("📡 FileFinder: Status code: \(httpResponse.statusCode)")
+                
+                // Manejar errores del servidor
+                if !(200...299).contains(httpResponse.statusCode) {
+                    if let data = data, let errorMessage = String(data: data, encoding: .utf8) {
+                        print("❌ FileFinder: Error del servidor: \(errorMessage)")
+                    }
+                    return
+                }
             }
             
             guard let data = data else { 
@@ -91,28 +109,29 @@ class ArchivoViewModel: ObservableObject {
             
             do {
                 let decoded = try JSONDecoder().decode([Archivo].self, from: data)
-                print("✅ FileFinder: Decodificación exitosa. Archivos encontrados en página \(self.currentPage): \(decoded.count)")
+                print("✅ FileFinder: Decodificación exitosa. Archivos encontrados en offset \(self.currentOffset): \(decoded.count)")
                 
                 // Filtrar solo archivos activos
                 let activeFiles = decoded.filter { $0.isActive }
-                print("✅ FileFinder: Archivos activos en página \(self.currentPage): \(activeFiles.count) de \(decoded.count)")
+                print("✅ FileFinder: Archivos activos en offset \(self.currentOffset): \(activeFiles.count) de \(decoded.count)")
                 
                 DispatchQueue.main.async { 
-                    if self.currentPage == 1 {
-                        // Primera página: reemplazar lista
+                    if self.currentOffset == 0 {
+                        // Primera carga: reemplazar lista
                         self.archivos = activeFiles
                     } else {
-                        // Páginas siguientes: agregar a la lista
+                        // Cargas siguientes: agregar a la lista
                         self.archivos.append(contentsOf: activeFiles)
                     }
                     
-                    // Verificar si hay más páginas
+                    // Verificar si hay más archivos
                     self.hasMoreFiles = decoded.count == self.pageSize
-                    self.currentPage += 1
+                    self.currentOffset += self.pageSize
                     self.isLoading = false
                     
                     print("🔄 FileFinder: Lista actualizada en UI con \(self.archivos.count) archivos activos totales")
                     print("🔄 FileFinder: ¿Hay más archivos?: \(self.hasMoreFiles)")
+                    print("🔄 FileFinder: Próximo offset: \(self.currentOffset)")
                 }
             } catch {
                 print("❌ FileFinder: Error al decodificar archivos:", error)
